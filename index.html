@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prayer Chain">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<title>AGC Prayer Chain</title>
+<style>
+:root{
+  --navy:#14213d; --navy2:#1f3466; --gold:#c9972b; --gold-soft:#f6e7bd;
+  --bg:#f7f3ea; --card:#ffffff; --ink:#1b2236; --muted:#5d6579; --line:#e3dccb;
+  --ok:#2f7d5b; --okbg:#e6f3ec; --warn:#a4351f; --mine:#fff4d6; --mine-line:#e2bf62;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0e1424; --card:#172038; --ink:#eef0f6; --muted:#a3abc0; --line:#2a3558;
+    --gold-soft:#3a3115; --ok:#5fcf9d; --okbg:#14352a; --mine:#3a3115; --mine-line:#8a6d22; --warn:#ff9b86; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI","Noto Sans","Noto Sans Devanagari",Roboto,sans-serif;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+[lang=ne]{font-family:"Noto Sans Devanagari","Mukta","Nirmala UI","Kohinoor Devanagari",system-ui,sans-serif}
+#app{max-width:560px;margin:0 auto}
+header{background:linear-gradient(160deg,var(--navy2),var(--navy));color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:48px;height:48px;border-radius:12px;flex:none}
+.brand .t{flex:1;min-width:0}
+.brand .t .cols{color:#fff;border-color:rgba(255,255,255,.25);font-weight:700;font-size:1.05rem}
+.brand .t .sub{font-size:.78rem;opacity:.8;margin-top:2px}
+.months{display:flex;gap:8px;margin-top:12px}
+.months button{flex:1;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;border-radius:12px;padding:8px 6px;min-height:48px}
+.months button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:#1b1500;font-weight:700}
+main{padding:14px 14px 0}
+.banner{border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.88rem}
+.banner.demo{background:var(--gold-soft);color:var(--ink);border:1px dashed var(--mine-line)}
+.banner.off{background:#fde8e4;color:#7a2514}
+@media (prefers-color-scheme:dark){.banner.off{background:#3b1a14;color:#ffb4a4}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.bi{display:inline-flex;flex-direction:column;line-height:1.2;text-align:center}
+.bi>span+span{font-size:.86em;opacity:.85}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px}
+.cols>div:first-child{padding-right:10px}
+.cols>div:last-child{padding-left:10px;border-left:1px solid var(--line)}
+.h2{font-size:1.05rem;font-weight:700}
+.meter{height:12px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0}
+.meter>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#e6c36a);border-radius:99px}
+.muted{color:var(--muted);font-size:.86rem}
+.row2{display:flex;justify-content:space-between;gap:8px;align-items:center}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{border:0;border-radius:12px;padding:10px 14px;min-height:48px;background:var(--navy);color:#fff;font-weight:600}
+.btn.gold{background:var(--gold);color:#1b1500}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.btn.sm{min-height:44px;padding:6px 12px;font-size:.9rem}
+.btn[disabled]{opacity:.5}
+.btn.block{width:100%}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin:0 -2px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.day{flex:none;width:54px;min-height:70px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 2px;text-align:center;scroll-snap-align:center}
+.day small{display:block;font-size:.68rem;color:var(--muted);line-height:1.1}
+.day b{display:block;font-size:1.15rem;margin:2px 0}
+.day i{display:block;height:5px;margin:3px 6px 0;border-radius:9px;background:var(--line);overflow:hidden}
+.day i>u{display:block;height:100%;background:var(--gold);text-decoration:none}
+.day[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.day[aria-pressed=true] small{color:#d7def0}
+.day.today b::after{content:"";display:inline-block;width:6px;height:6px;border-radius:9px;background:var(--gold);margin-left:3px;vertical-align:middle}
+.slot{display:grid;grid-template-columns:118px 1fr auto;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin-bottom:8px;min-height:56px}
+.slot .tm{font-weight:700;font-size:.9rem;line-height:1.15}
+.slot.open{border-color:var(--ok);background:var(--okbg)}
+.slot.mine{background:var(--mine);border-color:var(--mine-line)}
+.slot.past{opacity:.55}
+.slot.now{box-shadow:0 0 0 2px var(--gold)}
+.slot.flash{animation:flash 1.4s ease 1}
+@keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+.nm{font-weight:600;overflow-wrap:anywhere}
+.tag{display:inline-block;font-size:.68rem;padding:1px 7px;border-radius:99px;background:var(--gold);color:#1b1500;margin-left:6px;vertical-align:middle}
+.tag.ok{background:var(--ok);color:#fff}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.req{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:10px;overflow:hidden}
+.req>div{padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.req>div+div{border-left:1px solid var(--line)}
+.req .n{display:inline-block;min-width:22px;height:22px;border-radius:99px;background:var(--navy);color:#fff;text-align:center;font-size:.75rem;line-height:22px;margin-right:6px}
+.req.ans{opacity:.8;border-style:dashed}
+textarea,input[type=text],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:48px}
+textarea{min-height:92px;resize:vertical}
+label.f{display:block;font-size:.8rem;color:var(--muted);margin:6px 0 4px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;border:0;background:none;padding:9px 1px;min-height:62px;color:var(--muted);font-size:.72rem;display:flex;align-items:center;justify-content:center}
+nav button[aria-current=page]{color:var(--navy);font-weight:700;box-shadow:inset 0 3px 0 var(--gold)}
+@media (prefers-color-scheme:dark){nav button[aria-current=page]{color:#fff}}
+#sheet{display:none}
+#sheet.open{display:block}
+.scrim{position:fixed;inset:0;background:rgba(5,10,25,.55);z-index:10}
+.panel{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));z-index:11}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111a30;color:#fff;border-radius:12px;padding:10px 14px;z-index:20;max-width:90%;text-align:center;display:none;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.empty{text-align:center;color:var(--muted);padding:26px 10px}
+.item{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px;background:var(--card)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk{display:flex;gap:8px;align-items:center;min-height:44px}
+.chk input{width:22px;height:22px}
+.sr{position:absolute;left:-9999px}
+.tools{display:flex;gap:8px;align-items:center;margin-top:10px}
+.tools select{flex:1;min-width:0;min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;padding:0 8px;font:inherit;font-size:16px}
+.tools select option{color:#111;background:#fff}
+.gear{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:1.2rem}
+.loc{display:block;font-size:.72rem;font-weight:500;color:var(--muted);margin-top:2px}
+.sess .when{margin:4px 0}
+.sess .who{font-size:.88rem;color:var(--muted);margin:6px 0 10px;overflow-wrap:anywhere}
+.sess.ended{opacity:.6}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+input[type=date],input[type=time],input[type=url],select.fld{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:48px}
+.note{font-size:.8rem;color:var(--muted);margin:0 0 10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="AGC Prayer Chain logo">
+      <div class="t">
+        <div class="cols"><div>AGC Prayer Chain</div><div lang="ne">AGC प्रार्थना शृङ्खला</div></div>
+        <div class="sub" id="sub"></div>
+      </div>
+    </div>
+    <div class="months" id="months"></div>
+    <div class="tools">
+      <span aria-hidden="true">🌍</span>
+      <select id="tz" aria-label="Your time zone"></select>
+      <button class="gear" id="gear" data-act="tab" data-v="admin" aria-label="Admin">⚙</button>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+<nav id="tabs" aria-label="Main"></nav>
+<div id="sheet" role="dialog" aria-modal="true"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ====================================================================
+   SETTINGS — the only line you normally need to change
+   ==================================================================== */
+const API_URL = '';              // paste your Google Apps Script "Web app" URL here (see SETUP.md). Empty = demo mode.
+const DEFAULT_TZ = 'America/Chicago';   // used until the server reports its own time zone
+
+/* ====================================================================
+   TEXT — every screen label, English + Nepali, in ONE place for easy review
+   ==================================================================== */
+const I = {
+  subtitle:   ['Every hour covered in prayer', 'हरेक घण्टा प्रार्थनामा'],
+  tabSlots:   ['Pick a Time', 'समय छान्नुहोस्'],
+  tabReq:     ['Requests', 'विषयहरू'],
+  tabTogether:['Pray Together', 'सँगै प्रार्थना'],
+  tabTranslate:['Translate', 'अनुवाद'],
+  tabMine:    ['My Hours', 'मेरा घण्टा'],
+  tabAdmin:   ['Admin', 'प्रशासक'],
+  prayingNow: ['Praying now', 'अहिले प्रार्थना गर्दै'],
+  hourOpen:   ['This hour is still open', 'यो घण्टा अझै उपलब्ध छ'],
+  takeHour:   ['Take this hour', 'यो घण्टा लिनुहोस्'],
+  open:       ['Open', 'उपलब्ध'],
+  pick:       ['Pick', 'छान्नुहोस्'],
+  you:        ['You', 'तपाईं'],
+  now:        ['Now', 'अहिले'],
+  today:      ['Today', 'आज'],
+  cancel:     ['Cancel', 'रद्द गर्नुहोस्'],
+  confirmQ:   ['Pray during this hour?', 'यो घण्टामा प्रार्थना गर्ने?'],
+  firstName:  ['Your first name', 'तपाईंको पहिलो नाम'],
+  firstOnly:  ['Only first names are shown to others.', 'अरूलाई पहिलो नाम मात्र देखाइन्छ।'],
+  confirm:    ['Confirm', 'पुष्टि गर्नुहोस्'],
+  close:      ['Close', 'बन्द गर्नुहोस्'],
+  prayed:     ['I prayed', 'मैले प्रार्थना गरेँ'],
+  prayedDone: ['Prayed ✓', 'प्रार्थना गरियो ✓'],
+  addCal:     ['Add reminder', 'रिमाइन्डर थप्नुहोस्'],
+  coverage:   ['Hours covered', 'भरिएका घण्टा'],
+  nextOpen:   ['Find the next open hour', 'अर्को उपलब्ध घण्टा खोज्नुहोस्'],
+  allCovered: ['Every remaining hour is covered. Thank you!', 'बाँकी सबै घण्टा भरिएका छन्। धन्यवाद!'],
+  noReq:      ['No prayer requests have been posted for this month yet.', 'यस महिनाका लागि अहिलेसम्म प्रार्थनाका विषयहरू राखिएको छैन।'],
+  answered:   ['Answered prayers', 'उत्तर पाएका प्रार्थनाहरू'],
+  reqFor:     ['Prayer requests', 'प्रार्थनाका विषयहरू'],
+  noMine:     ['You have not picked any hours this month yet.', 'तपाईंले यस महिना अहिलेसम्म कुनै घण्टा छान्नुभएको छैन।'],
+  myHoursFor: ['Your hours', 'तपाईंका घण्टा'],
+  adminPin:   ['Admin PIN', 'प्रशासक पिन'],
+  unlock:     ['Unlock', 'खोल्नुहोस्'],
+  lock:       ['Lock', 'बन्द गर्नुहोस्'],
+  addReq:     ['Add a request', 'विषय थप्नुहोस्'],
+  saveReq:    ['Save requests', 'विषयहरू सुरक्षित गर्नुहोस्'],
+  english:    ['English', 'अंग्रेजी'],
+  nepali:     ['Nepali', 'नेपाली'],
+  markAns:    ['Answered', 'उत्तर पाइयो'],
+  del:        ['Delete', 'मेटाउनुहोस्'],
+  remove:     ['Remove', 'हटाउनुहोस्'],
+  archive:    ['Save last month to Drive', 'गत महिना ड्राइभमा सुरक्षित गर्नुहोस्'],
+  offline:    ['Offline – showing the last saved view', 'अफलाइन – पछिल्लो सुरक्षित दृश्य देखाइँदै'],
+  demo:       ['Demo mode – nothing is shared with others yet.', 'डेमो मोड – अहिले केही पनि अरूसँग साझा हुँदैन।'],
+  loading:    ['Loading…', 'लोड हुँदै छ…'],
+  taken:      ['Someone just took this hour. Please pick another.', 'यो घण्टा अहिले नै अरू कसैले लिए। कृपया अर्को छान्नुहोस्।'],
+  nameNeeded: ['Please enter your first name.', 'कृपया आफ्नो पहिलो नाम लेख्नुहोस्।'],
+  saved:      ['Saved', 'सुरक्षित भयो'],
+  picked:     ['Hour picked. Thank you for praying!', 'घण्टा छानियो। प्रार्थना गर्नुभएकोमा धन्यवाद!'],
+  released:   ['Hour cancelled', 'घण्टा रद्द गरियो'],
+  wrongPin:   ['That PIN did not work.', 'त्यो पिन मिलेन।'],
+  confirmArch:['Save last month to Drive and clear it from the app?', 'गत महिना ड्राइभमा सुरक्षित गरेर एपबाट हटाउने?'],
+  archived:   ['Saved to your Drive', 'तपाईंको ड्राइभमा सुरक्षित भयो'],
+  installIos: ['To install: tap Share, then “Add to Home Screen”.', 'इन्स्टल गर्न: शेयर थिच्नुहोस्, अनि “होम स्क्रिनमा थप्नुहोस्”।'],
+  installBtn: ['Install the app', 'एप इन्स्टल गर्नुहोस्'],
+  tryAgain:   ['Could not load. Check your internet and try again.', 'लोड गर्न सकिएन। इन्टरनेट जाँचेर फेरि प्रयास गर्नुहोस्।'],
+  retry:      ['Try again', 'फेरि प्रयास गर्नुहोस्'],
+  moveUp:     ['Move up', 'माथि सार्नुहोस्'],
+  moveDown:   ['Move down', 'तल सार्नुहोस्'],
+  hours:      ['hours', 'घण्टा'],
+  of:         ['of', 'मध्ये'],
+  adminHint:  ['Type or paste each request in English and in Nepali.', 'हरेक विषय अंग्रेजी र नेपालीमा लेख्नुहोस् वा टाँस्नुहोस्।'],
+  yourTz:     ['Your time zone', 'तपाईंको समय क्षेत्र'],
+  timesNote:  ['Main times are chain time ({tz}). 🌍 shows your own time.', 'मुख्य समय शृङ्खलाको समय ({tz}) हो। 🌍 ले तपाईंको आफ्नै समय देखाउँछ।'],
+  togetherIntro: ['Join others at the same time, from anywhere in the world. Times are shown in your own time zone.', 'संसारको जुनसुकै ठाउँबाट अरूसँग एकै समयमा सहभागी हुनुहोस्। समय तपाईंको आफ्नै समय क्षेत्रमा देखाइन्छ।'],
+  noSessions: ['No group prayer times have been scheduled yet.', 'अहिलेसम्म सामूहिक प्रार्थनाको समय तोकिएको छैन।'],
+  join:       ['Join', 'सहभागी हुनुहोस्'],
+  leave:      ['Leave', 'छोड्नुहोस्'],
+  joinedTag:  ['You are in ✓', 'तपाईं सहभागी हुनुहुन्छ ✓'],
+  ended:      ['Ended', 'सकियो'],
+  peopleJoined: ['joined', 'जना सहभागी'],
+  nobodyYet:  ['Be the first to join.', 'पहिलो सहभागी बन्नुहोस्।'],
+  openLink:   ['Open meeting link', 'बैठकको लिङ्क खोल्नुहोस्'],
+  placeQ:     ['Your country or city (optional)', 'तपाईंको देश वा सहर (वैकल्पिक)'],
+  joinQ:      ['Join this group prayer?', 'यो सामूहिक प्रार्थनामा सहभागी हुने?'],
+  sessionJoined: ['You joined. Thank you for praying!', 'तपाईं सहभागी हुनुभयो। प्रार्थना गर्नुभएकोमा धन्यवाद!'],
+  sessionLeft:['You left this group prayer.', 'तपाईंले यो सामूहिक प्रार्थना छोड्नुभयो।'],
+  addSession: ['Add a group time', 'सामूहिक समय थप्नुहोस्'],
+  saveSessions: ['Save group times', 'सामूहिक समयहरू सुरक्षित गर्नुहोस्'],
+  groupTimes: ['Group prayer times', 'सामूहिक प्रार्थनाका समयहरू'],
+  fDate:      ['Date', 'मिति'],
+  fTime:      ['Start time (chain time)', 'सुरु हुने समय (शृङ्खलाको समय)'],
+  fMinutes:   ['Minutes', 'मिनेट'],
+  fTitle:     ['Title', 'शीर्षक'],
+  fLink:      ['Meeting link (optional)', 'बैठकको लिङ्क (वैकल्पिक)'],
+  translator: ['Translator', 'अनुवादक'],
+  trEnNe:     ['English → Nepali', 'अंग्रेजी → नेपाली'],
+  trNeEn:     ['Nepali → English', 'नेपाली → अंग्रेजी'],
+  trGo:       ['Translate', 'अनुवाद गर्नुहोस्'],
+  trCopy:     ['Copy', 'कपी गर्नुहोस्'],
+  trWarn:     ['Machine translation: it can contain mistakes. Please have a Nepali speaker check anything important.', 'यो मेसिनद्वारा गरिएको अनुवाद हो: यसमा गल्ती हुन सक्छ। महत्त्वपूर्ण कुरा नेपाली भाषी व्यक्तिले जाँच्नुहोस्।'],
+  trDemo:     ['Translation works once the app is connected to your Drive.', 'एप तपाईंको ड्राइभसँग जोडिएपछि मात्र अनुवाद काम गर्छ।'],
+  trEmpty:    ['Type or paste some text first.', 'पहिले केही पाठ लेख्नुहोस् वा टाँस्नुहोस्।'],
+  translating:['Translating…', 'अनुवाद हुँदै छ…'],
+  copied:     ['Copied', 'कपी भयो'],
+  copyCodeBtn:['Copy code', 'कोड कपी गर्नुहोस्'],
+  backupT:    ['Switching phones or browsers?', 'फोन वा ब्राउजर बदल्दै हुनुहुन्छ?'],
+  backupD:    ['Save this code. Type it on your new phone to get your hours back.', 'यो कोड सुरक्षित राख्नुहोस्। नयाँ फोनमा यो कोड हाल्नुभयो भने तपाईंका घण्टाहरू फिर्ता आउँछन्।'],
+  restoreBtn: ['Restore', 'फिर्ता ल्याउनुहोस्'],
+  restorePh:  ['Paste your code here', 'तपाईंको कोड यहाँ राख्नुहोस्'],
+  restoreBad: ['That code does not look right.', 'त्यो कोड मिलेन।'],
+  inApp:      ['Open this link in Safari or Chrome so the app can recognize you and keep your hours.', 'एपले तपाईंलाई चिन्न र तपाईंका घण्टा सम्झन सकोस् भनी यो लिङ्क Safari वा Chrome मा खोल्नुहोस्।'],
+  rmName:     ['Remove all hours under a first name', 'कुनै पहिलो नामका सबै घण्टा हटाउनुहोस्'],
+  rmBtn:      ['Remove', 'हटाउनुहोस्'],
+  rmDone:     ['Removed', 'हटाइयो'],
+  trDraft:    ['Translate to Nepali (draft)', 'नेपालीमा अनुवाद (मस्यौदा)'],
+  trDraftNote:['Nepali draft added. Please review it.', 'नेपाली मस्यौदा थपियो। कृपया जाँच्नुहोस्।']
+};
+const NE_MONTHS = ['जनवरी','फेब्रुअरी','मार्च','अप्रिल','मे','जुन','जुलाई','अगस्ट','सेप्टेम्बर','अक्टोबर','नोभेम्बर','डिसेम्बर'];
+const NE_DAYS   = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहीबार','शुक्रबार','शनिबार'];
+const NE_DAYS_S = ['आइत','सोम','मंगल','बुध','बिही','शुक्र','शनि'];
+const EN_DAYS_S = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const EN_DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+/* ====================================================================
+   SMALL HELPERS
+   ==================================================================== */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const bi = (key) => `<span class="bi"><span>${esc(I[key][0])}</span><span lang="ne">${esc(I[key][1])}</span></span>`;
+const cols = (en, ne, cls) => `<div class="cols ${cls || ''}"><div>${en}</div><div lang="ne">${ne}</div></div>`;
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
+};
+const deviceId = (() => {
+  let id = LS.get('agc_device', null);
+  if (!id) {
+    id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+    LS.set('agc_device', id);
+  }
+  return id;
+})();
+
+function firstName(raw) {
+  const s = String(raw || '').replace(/<[^>]*>/g, ' ').replace(/[<>&"'`\\]/g, ' ').trim().split(/\s+/)[0] || '';
+  return Array.from(s).slice(0, 20).join('');
+}
+function tzNow(tz) {
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+  const g = (t) => p.find((x) => x.type === t).value;
+  return { date: `${g('year')}-${g('month')}-${g('day')}`, hour: Number(g('hour')) % 24, minute: Number(g('minute')) };
+}
+function validTz(tz) { try { if (tz && typeof tz === 'string') { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return tz; } } catch (e) { /* unknown zone */ } return null; }
+function nextMonthOf(m) { let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } return `${y}-${pad(mo)}`; }
+function daysIn(m) { const [y, mo] = m.split('-').map(Number); return new Date(Date.UTC(y, mo, 0)).getUTCDate(); }
+function dow(date) { const [y, m, d] = date.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
+function hl(h) { const x = h % 12 || 12; return `${x} ${h % 24 < 12 ? 'AM' : 'PM'}`; }
+const range = (h) => `${hl(h)} – ${hl((h + 1) % 24)}`;
+function monthLabel(m) { const [y, mo] = m.split('-').map(Number); return [`${EN_MONTHS[mo - 1]} ${y}`, `${NE_MONTHS[mo - 1]} ${y}`]; }
+function dayLabel(date) {
+  const [, m, d] = date.split('-').map(Number); const w = dow(date);
+  return [`${EN_DAYS[w]}, ${EN_MONTHS[m - 1]} ${d}`, `${NE_DAYS[w]}, ${NE_MONTHS[m - 1]} ${d}`];
+}
+function tzOffsetMs(utcMs, tz) {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utcMs));
+  const g = (t) => Number(p.find((x) => x.type === t).value);
+  return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second')) - utcMs;
+}
+function zonedToUtc(date, hour, tz, min) {
+  const [y, m, d] = date.split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, d, hour, min || 0);
+  let off = tzOffsetMs(guess, tz);
+  off = tzOffsetMs(guess - off, tz);
+  return guess - off;
+}
+const icsEsc = (t) => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+function icsEvent(startMs, endMs, summary, uid, desc) {
+  const f = (ms) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AGC Prayer Chain//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    `UID:${uid}`, `DTSTAMP:${f(Date.now())}`, `DTSTART:${f(startMs)}`, `DTEND:${f(endMs)}`,
+    `SUMMARY:${icsEsc(summary)}`, `DESCRIPTION:${icsEsc(desc)}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Prayer starts soon', 'TRIGGER:-PT10M', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+function buildIcs(date, hour, tz) {
+  const s = zonedToUtc(date, hour, tz);
+  return icsEvent(s, s + 3600e3, 'AGC Prayer Chain – my prayer hour | AGC प्रार्थना शृङ्खला', `agc-${date}-${hour}-${deviceId.slice(0, 8)}@prayerchain`, 'My hour in the AGC prayer chain.');
+}
+function downloadText(name, text) {
+  const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function downloadIcs(date, hour, tz) { downloadText(`prayer-${date}-${pad(hour)}.ics`, buildIcs(date, hour, tz)); }
+const safeLink = (u) => (/^https?:\/\/[^\s<>"'`\\]+$/i.test(String(u || '')) ? u : '');
+const fmtTz = (ms, tz, o) => new Intl.DateTimeFormat('en-US', Object.assign({ timeZone: tz }, o)).format(new Date(ms));
+function offsetLabel(tz, ms) {
+  const m = Math.round(tzOffsetMs(ms, tz) / 60000), a = Math.abs(m);
+  return `UTC${m < 0 ? '-' : '+'}${Math.floor(a / 60)}${a % 60 ? ':' + pad(a % 60) : ''}`;
+}
+let toastTimer;
+function toast(key, raw) {
+  const el = $('#toast');
+  el.innerHTML = raw ? esc(raw) : `<div>${esc(I[key][0])}</div><div lang="ne" style="font-size:.9em;opacity:.9">${esc(I[key][1])}</div>`;
+  el.style.display = 'block'; clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3200);
+}
+
+/* ====================================================================
+   DATA LAYER — "Remote" talks to your Google Drive backend,
+   "Demo" keeps everything on this phone so you can try the app first.
+   ==================================================================== */
+const Remote = {
+  // Every call gives up after 25 seconds, so a bad connection can never leave the app stuck "busy".
+  async call(url, opts) {
+    const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), 25000) : null;
+    let r, txt;
+    try {
+      r = await fetch(url, Object.assign({}, opts, ctl ? { signal: ctl.signal } : {}));
+      txt = await r.text();
+    } catch (e) {
+      throw new Error('No connection. Please check your internet and try again. / इन्टरनेट जाँच गरेर फेरि प्रयास गर्नुहोस्।');
+    } finally { if (timer) clearTimeout(timer); }
+    let j;
+    try { j = JSON.parse(txt); } catch (e) {
+      throw new Error('The prayer chain server did not answer correctly. Please try again later. / सर्भरले ठीकसँग जवाफ दिएन। पछि फेरि प्रयास गर्नुहोस्।');
+    }
+    return Remote.check(j);
+  },
+  state(month) {
+    return Remote.call(`${API_URL}?action=state&month=${encodeURIComponent(month)}&deviceId=${encodeURIComponent(deviceId)}`);
+  },
+  post(body) {
+    return Remote.call(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ deviceId }, body)) });
+  },
+  check(j) { if (j && j.error) throw new Error(j.error); return j; }
+};
+
+const Demo = {
+  PIN: '1234',
+  db() { let d = LS.get('agc_demo_db', null); if (!d) { d = Demo.seed(); LS.set('agc_demo_db', d); } d.sessions = d.sessions || {}; d.joins = d.joins || []; return d; },
+  save(d) { LS.set('agc_demo_db', d); },
+  seed() {
+    const n = tzNow(DEFAULT_TZ), m = n.date.slice(0, 7), d0 = Number(n.date.slice(8));
+    const names = ['Sunita', 'David', 'Maria', 'Rajan', 'Grace', 'Anil', 'Ruth', 'Samuel'];
+    const slots = []; let k = 0;
+    for (let dd = d0; dd <= Math.min(daysIn(m), d0 + 2); dd++) {
+      for (let h = 5; h < 22; h++) { if ((h + dd) % 3 !== 0) slots.push({ d: `${m}-${pad(dd)}`, h, n: names[k++ % names.length], dev: 'sample', p: false }); }
+    }
+    const sd = Math.min(daysIn(m), d0 + 1);
+    return { sessions: { [m]: [{ id: 's1', d: `${m}-${pad(sd)}`, t: '20:00', dur: 60, en: 'Worldwide prayer gathering', ne: 'विश्वव्यापी प्रार्थना सभा', link: '' }] },
+      joins: [{ sid: 's1', n: 'Sunita', c: 'Nepal', dev: 'sample' }, { sid: 's1', n: 'David', c: 'USA', dev: 'sample' }, { sid: 's1', n: 'Grace', c: 'Kenya', dev: 'sample' }],
+      slots, requests: { [m]: [
+      { id: 'r1', en: 'Pray for our church families and for unity.', ne: 'हाम्रो मण्डलीका परिवारहरू र एकताका लागि प्रार्थना गरौं।', status: 'active', order: 1 },
+      { id: 'r2', en: 'Pray for the sick and for those in the hospital.', ne: 'बिरामीहरू र अस्पतालमा भएकाहरूका लागि प्रार्थना गरौं।', status: 'active', order: 2 },
+      { id: 'r3', en: 'Pray for our nation, Nepal, and for peace.', ne: 'हाम्रो देश नेपाल र शान्तिका लागि प्रार्थना गरौं।', status: 'active', order: 3 }
+    ] } };
+  },
+  months() { const cur = tzNow(DEFAULT_TZ).date.slice(0, 7); return [cur, nextMonthOf(cur)]; },
+  async state(month) {
+    const d = Demo.db(), months = Demo.months(), n = tzNow(DEFAULT_TZ);
+    if (!months.includes(month)) throw new Error('That month is not open.');
+    return {
+      month,
+      slots: d.slots.filter((s) => s.d.startsWith(month)).map((s) => ({ d: s.d, h: s.h, n: s.n, m: s.dev === deviceId, p: !!s.p })),
+      requests: (d.requests[month] || []).slice().sort((a, b) => a.order - b.order),
+      sessions: (d.sessions[month] || []).map((q) => Object.assign({}, q, { joined: d.joins.filter((j) => j.sid === q.id).map((j) => ({ n: j.n, c: j.c, m: j.dev === deviceId })) })).sort((a, b) => ((a.d + a.t) < (b.d + b.t) ? -1 : 1)),
+      config: { tz: DEFAULT_TZ, startHour: 0, endHour: 24, months, nowDate: n.date, nowHour: n.hour }
+    };
+  },
+  async post(b) {
+    const d = Demo.db(), n = tzNow(DEFAULT_TZ);
+    const pinOk = () => { if (b.pin !== Demo.PIN) throw new Error('Wrong admin PIN.'); };
+    const find = () => d.slots.findIndex((s) => s.d === b.date && s.h === Number(b.hour));
+    const past = b.date < n.date || (b.date === n.date && Number(b.hour) < n.hour);
+    if (b.action === 'claim') {
+      if (past) throw new Error('That hour has already passed.');
+      if (find() >= 0) throw new Error('taken');
+      const name = firstName(b.name); if (!name) throw new Error('Please enter your first name.');
+      d.slots.push({ d: b.date, h: Number(b.hour), n: name, dev: deviceId, p: false });
+    } else if (b.action === 'release') {
+      const i = find(); if (i >= 0) { if (d.slots[i].dev !== deviceId && b.pin !== Demo.PIN) throw new Error('You can only release your own hour.'); d.slots.splice(i, 1); }
+    } else if (b.action === 'prayed') {
+      const i = find(); if (i < 0 || d.slots[i].dev !== deviceId) throw new Error('You can only check in on your own hour.');
+      d.slots[i].p = !d.slots[i].p;
+    } else if (b.action === 'checkPin') { pinOk();
+    } else if (b.action === 'saveRequests') {
+      pinOk();
+      d.requests[b.month] = (b.requests || []).filter((q) => q.en || q.ne).map((q, i) => ({ id: 'r' + Date.now() + i, en: q.en || '', ne: q.ne || '', status: q.status === 'answered' ? 'answered' : 'active', order: i + 1 }));
+    } else if (b.action === 'saveSessions') {
+      pinOk();
+      const old = d.sessions[b.month] || [], oldIds = new Set(old.map((q) => q.id));
+      const list = (b.sessions || []).filter((q) => q.en || q.ne || q.d);
+      list.forEach((q) => {
+        if (!(q.en || q.ne)) throw new Error('Each group time needs a title.');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(q.d || '') || !String(q.d).startsWith(b.month) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(q.t || '')) throw new Error('Each group time needs a date in this month and a start time.');
+        if (q.link && !safeLink(q.link)) throw new Error('The meeting link must start with http:// or https://');
+      });
+      const next = list.map((q, i) => ({ id: (q.id && oldIds.has(q.id)) ? q.id : 's' + Date.now() + i, d: q.d, t: q.t, dur: Math.max(15, Math.min(240, Math.round(Number(q.dur)) || 60)), en: q.en || '', ne: q.ne || '', link: q.link || '' }));
+      const keep = new Set(next.map((q) => q.id));
+      d.joins = d.joins.filter((j) => !oldIds.has(j.sid) || keep.has(j.sid));
+      d.sessions[b.month] = next;
+    } else if (b.action === 'join') {
+      const q = (d.sessions[b.month] || []).find((x) => x.id === b.sessionId);
+      if (!q) throw new Error('That group time no longer exists.');
+      if (Date.now() >= zonedToUtc(q.d, Number(q.t.slice(0, 2)), DEFAULT_TZ, Number(q.t.slice(3))) + q.dur * 60000) throw new Error('This group time has already ended.');
+      const name = firstName(b.name); if (!name) throw new Error('Please enter your first name.');
+      const c = String(b.country || '').replace(/<[^>]*>/g, ' ').replace(/[<>&"'`\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 30);
+      const j = d.joins.find((x) => x.sid === q.id && x.dev === deviceId);
+      if (j) { j.n = name; j.c = c; } else d.joins.push({ sid: q.id, n: name, c, dev: deviceId });
+    } else if (b.action === 'leave') {
+      d.joins = d.joins.filter((j) => !(j.sid === b.sessionId && j.dev === deviceId));
+    } else if (b.action === 'translate') { throw new Error('DEMO_NO_TRANSLATE');
+    } else if (b.action === 'removeName') { pinOk(); const nm = String(b.name || '').toLowerCase(); const before = d.slots.length; d.slots = d.slots.filter((s) => s.n.toLowerCase() !== nm); Demo.save(d); return { ok: true, removed: before - d.slots.length };
+    } else if (b.action === 'archive') { pinOk(); return { ok: true, archived: false, note: 'Demo mode: nothing to archive.' };
+    } else throw new Error('Unknown action');
+    Demo.save(d); return { ok: true };
+  }
+};
+const Api = API_URL ? Remote : Demo;
+
+/* ====================================================================
+   APP STATE
+   ==================================================================== */
+const S = {
+  view: 'slots', tz: DEFAULT_TZ, month: tzNow(DEFAULT_TZ).date.slice(0, 7), day: null,
+  data: null, error: null, offline: false, busy: false,
+  pin: (() => { try { return sessionStorage.getItem('agc_pin') || ''; } catch (e) { return ''; } })(),
+  draft: null, draftMonth: null, sdraft: null, sdraftMonth: null, tr: { dir: 'en-ne', input: '', output: '' },
+  vtz: validTz(LS.get('agc_vtz', null)) || validTz((() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return null; } })()) || DEFAULT_TZ,
+  now: tzNow(DEFAULT_TZ), flashHour: null, showArchived: false, installEvt: null
+};
+const isDemo = () => !API_URL;
+const cfg = () => (S.data && S.data.config) || { tz: S.tz, startHour: 0, endHour: 24, months: [S.month, nextMonthOf(S.month)] };
+const hoursList = () => { const c = cfg(), a = []; for (let h = c.startHour; h < c.endHour; h++) a.push(h); return a; };
+const slotIndex = () => { const m = new Map(); (S.data ? S.data.slots : []).forEach((s) => m.set(`${s.d}|${s.h}`, s)); return m; };
+const isPast = (date, h) => date < S.now.date || (date === S.now.date && h < S.now.hour);
+const hasStarted = (date, h) => date < S.now.date || (date === S.now.date && h <= S.now.hour);
+const curMonth = () => S.now.date.slice(0, 7);
+// ---- time zones: the chain runs on one time zone (S.tz); everyone can also see their own (S.vtz)
+const showsLocal = (ms) => !!S.vtz && S.vtz !== S.tz && tzOffsetMs(ms, S.tz) !== tzOffsetMs(ms, S.vtz);
+function tzAbbr(ms, tz) { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms)).find((x) => x.type === 'timeZoneName').value; }
+function localRange(date, h) {
+  const s = zonedToUtc(date, h, S.tz); if (!showsLocal(s)) return '';
+  const t = (ms) => fmtTz(ms, S.vtz, { hour: 'numeric', minute: '2-digit' });
+  return `${fmtTz(s, S.vtz, { weekday: 'short' })} ${t(s)} – ${t(s + 3600e3)}`;
+}
+function sessionTimes(q) {
+  const s = zonedToUtc(q.d, Number(q.t.slice(0, 2)), S.tz, Number(q.t.slice(3, 5))), e = s + q.dur * 60000;
+  const o = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+  return { start: s, end: e, chain: fmtTz(s, S.tz, o), local: showsLocal(s) ? fmtTz(s, S.vtz, o) : '' };
+}
+// Popular zones, in friendly form. (Browsers disagree on some names, e.g. Chrome calls Asia/Kathmandu "Asia/Katmandu",
+// so every entry is matched by its canonical name and nothing is listed twice.)
+const TZ_CHOICES = ['Pacific/Honolulu', 'America/Anchorage', 'America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York', 'America/Toronto', 'America/Halifax',
+  'America/Mexico_City', 'America/Bogota', 'America/Lima', 'America/Sao_Paulo', 'America/Argentina/Buenos_Aires', 'Atlantic/Reykjavik', 'Europe/London', 'Europe/Lisbon',
+  'Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid', 'Europe/Athens', 'Europe/Istanbul', 'Europe/Moscow', 'Africa/Lagos', 'Africa/Cairo', 'Africa/Johannesburg',
+  'Africa/Nairobi', 'Asia/Jerusalem', 'Asia/Dubai', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Kathmandu', 'Asia/Dhaka', 'Asia/Colombo', 'Asia/Bangkok', 'Asia/Jakarta',
+  'Asia/Singapore', 'Asia/Kuala_Lumpur', 'Asia/Manila', 'Asia/Hong_Kong', 'Asia/Shanghai', 'Asia/Taipei', 'Asia/Seoul', 'Asia/Tokyo', 'Australia/Perth',
+  'Australia/Adelaide', 'Australia/Sydney', 'Pacific/Auckland'];
+const canonTz = (tz) => { try { return new Intl.DateTimeFormat('en-US', { timeZone: tz }).resolvedOptions().timeZone; } catch (e) { return tz; } };
+let tzHtmlKey = '', tzHtml = '', tzByCanon = {};
+function tzOptions() {
+  const key = S.vtz + '|' + S.tz;
+  if (key === tzHtmlKey) return tzHtml;
+  const list = TZ_CHOICES.filter((z) => validTz(z)); tzByCanon = {};
+  list.forEach((z) => { tzByCanon[canonTz(z)] = z; });
+  [S.tz, S.vtz].forEach((x) => { if (x && !tzByCanon[canonTz(x)]) { list.push(x); tzByCanon[canonTz(x)] = x; } });
+  const now = Date.now();
+  list.sort((a, b) => tzOffsetMs(now, a) - tzOffsetMs(now, b));
+  tzHtml = list.map((tz) => `<option value="${esc(tz)}">${esc(tz.replace(/_/g, ' '))} (${offsetLabel(tz, now)})</option>`).join('');
+  tzHtmlKey = key; return tzHtml;
+}
+
+async function load(quiet) {
+  if (!quiet) { S.error = null; render(); }
+  try {
+    const d = await Api.state(S.month);
+    S.data = d; S.tz = d.config.tz || S.tz; S.offline = false; S.error = null;
+    LS.set('agc_cache_' + S.month, d);
+  } catch (e) {
+    if (/not open/i.test(e.message || '') && !load.retrying) {
+      // The month rolled over while the app stayed open: jump to the current month.
+      load.retrying = true;
+      try { S.month = tzNow(S.tz).date.slice(0, 7); S.day = null; S.draftMonth = null; S.sdraftMonth = null; S.data = null; return await load(quiet); }
+      finally { load.retrying = false; }
+    }
+    const c = LS.get('agc_cache_' + S.month, null);
+    if (c) { S.data = c; S.offline = true; } else { S.data = null; S.error = e.message || 'error'; }
+  }
+  S.now = tzNow(S.tz);
+  if (!S.day || !S.day.startsWith(S.month)) S.day = S.month === S.now.date.slice(0, 7) ? S.now.date : `${S.month}-01`;
+  if (S.view === 'admin' && S.pin && S.data) { if (S.draftMonth !== S.month) startReqDraft(); if (S.sdraftMonth !== S.month) startSesDraft(); }
+  const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (quiet && (typing || $('#sheet').classList.contains('open'))) return;
+  render();
+}
+function startReqDraft() {
+  S.draft = (S.data ? S.data.requests : []).map((q) => ({ en: q.en, ne: q.ne, status: q.status }));
+  S.draftMonth = S.month;
+}
+function startSesDraft() {
+  S.sdraft = (S.data && S.data.sessions ? S.data.sessions : []).map((q) => ({ id: q.id, d: q.d, t: q.t, dur: q.dur, en: q.en, ne: q.ne, link: q.link }));
+  S.sdraftMonth = S.month;
+}
+function startDraft() { startReqDraft(); startSesDraft(); }
+
+/* ====================================================================
+   VIEWS
+   ==================================================================== */
+function headerParts() {
+  $('#sub').textContent = `${I.subtitle[0]} · ${I.subtitle[1]}`;
+  const months = cfg().months.length ? cfg().months : [curMonth(), nextMonthOf(curMonth())];
+  $('#months').innerHTML = months.map((m) => {
+    const [en, ne] = monthLabel(m);
+    return `<button data-act="month" data-m="${m}" aria-pressed="${m === S.month}"><span class="bi"><span>${esc(en)}</span><span lang="ne">${esc(ne)}</span></span></button>`;
+  }).join('');
+  const sel = $('#tz');
+  if (sel.dataset.k !== tzHtmlKey + '|' + S.vtz) { sel.innerHTML = tzOptions(); sel.dataset.k = tzHtmlKey + '|' + S.vtz; }
+  sel.value = tzByCanon[canonTz(S.vtz)] || S.vtz;
+  sel.setAttribute('aria-label', `${I.yourTz[0]} / ${I.yourTz[1]}`);
+  $('#gear').setAttribute('aria-label', `${I.tabAdmin[0]} / ${I.tabAdmin[1]}`);
+}
+function tabsHtml() {
+  const tabs = [['slots', 'tabSlots'], ['together', 'tabTogether'], ['requests', 'tabReq'], ['mine', 'tabMine'], ['translate', 'tabTranslate']];
+  return tabs.map(([v, k]) => `<button data-act="tab" data-v="${v}" ${S.view === v ? 'aria-current="page"' : ''}>${bi(k)}</button>`).join('');
+}
+function bannerHtml() {
+  let h = '';
+  if (isDemo()) h += `<div class="banner demo">${esc(I.demo[0])}<br><span lang="ne">${esc(I.demo[1])}</span></div>`;
+  if (S.offline) h += `<div class="banner off">${esc(I.offline[0])}<br><span lang="ne">${esc(I.offline[1])}</span></div>`;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && !LS.get('agc_ios_dismissed', false);
+  if (ios) h += `<div class="banner demo"><div class="row2"><div>${esc(I.installIos[0])}<br><span lang="ne">${esc(I.installIos[1])}</span></div><button class="btn ghost sm" data-act="dismissIos" aria-label="${esc(I.close[0])}">✕</button></div></div>`;
+  const inApp = !isDemo() && !window.navigator.standalone && !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) &&
+    (/FBAN|FBAV|FB_IAB|Instagram|Messenger|MicroMessenger|Snapchat|TikTok|Line\/|; wv\)/i.test(navigator.userAgent) ||
+     (/iphone|ipad|ipod/i.test(navigator.userAgent) && !/safari|crios|fxios|edgios/i.test(navigator.userAgent)));
+  if (inApp) h += `<div class="banner off"><b>${esc(I.inApp[0])}</b><br><span lang="ne">${esc(I.inApp[1])}</span></div>`;
+  if (S.installEvt) h += `<div class="banner demo"><button class="btn gold sm block" data-act="install">${bi('installBtn')}</button></div>`;
+  return h;
+}
+
+function slotsHtml() {
+  const idx = slotIndex(), hours = hoursList(), dim = daysIn(S.month), total = dim * hours.length;
+  const slots = S.data.slots, filled = slots.length, prayed = slots.filter((s) => s.p).length;
+  const pct = total ? Math.round(100 * filled / total) : 0;
+  let html = '';
+
+  // Who is praying right now
+  if (S.month === curMonth() && hours.includes(S.now.hour)) {
+    const cur = idx.get(`${S.now.date}|${S.now.hour}`);
+    html += `<div class="card" style="border-color:var(--gold)">
+      <div class="row2"><div><div class="muted">${esc(I.prayingNow[0])} · <span lang="ne">${esc(I.prayingNow[1])}</span> (${esc(range(S.now.hour))})</div>`;
+    if (cur) html += `<div class="h2">🙏 ${esc(cur.n)}${cur.m ? ` <span class="tag">${esc(I.you[0])}</span>` : ''}</div></div></div></div>`;
+    else html += `<div class="h2">${esc(I.hourOpen[0])}</div><div lang="ne" class="muted">${esc(I.hourOpen[1])}</div></div>
+      <button class="btn gold sm" data-act="pick" data-d="${S.now.date}" data-h="${S.now.hour}">${bi('takeHour')}</button></div></div>`;
+  }
+
+  // Coverage
+  html += `<div class="card">
+    <div class="row2"><div class="h2">${esc(I.coverage[0])} · <span lang="ne">${esc(I.coverage[1])}</span></div><div class="h2">${pct}%</div></div>
+    <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+    <div class="muted">${filled} ${esc(I.of[0])} ${total} ${esc(I.hours[0])} · <span lang="ne">${total} ${esc(I.of[1])} ${filled} ${esc(I.hours[1])}</span>${prayed ? ` · ✓ ${prayed}` : ''}</div>
+    <button class="btn ghost block" style="margin-top:10px" data-act="nextOpen">${bi('nextOpen')}</button></div>`;
+
+  // Day strip
+  html += `<div class="strip" id="strip">`;
+  for (let d = 1; d <= dim; d++) {
+    const date = `${S.month}-${pad(d)}`, w = dow(date);
+    const c = slots.filter((s) => s.d === date).length, p = hours.length ? Math.round(100 * c / hours.length) : 0;
+    html += `<button class="day ${date === S.now.date ? 'today' : ''}" data-act="day" data-d="${date}" aria-pressed="${date === S.day}" aria-label="${esc(dayLabel(date)[0])}">
+      <small>${EN_DAYS_S[w]}</small><b>${d}</b><small lang="ne">${NE_DAYS_S[w]}</small><i><u style="width:${p}%"></u></i></button>`;
+  }
+  html += `</div>`;
+
+  // Day title + hours
+  const dl = dayLabel(S.day);
+  html += cols(`<span class="h2">${esc(dl[0])}</span>`, `<span class="h2">${esc(dl[1])}</span>`);
+  const noon = zonedToUtc(S.day, 12, S.tz);
+  if (showsLocal(noon)) { const ab = tzAbbr(noon, S.tz); html += `<p class="note">${esc(I.timesNote[0].replace('{tz}', ab))}<br><span lang="ne">${esc(I.timesNote[1].replace('{tz}', ab))}</span></p>`; }
+  hours.forEach((h) => {
+    const loc = localRange(S.day, h);
+    const s = idx.get(`${S.day}|${h}`), past = isPast(S.day, h), isNow = S.day === S.now.date && h === S.now.hour;
+    const cls = ['slot', s ? (s.m ? 'mine' : '') : (past ? '' : 'open'), past ? 'past' : '', isNow ? 'now' : '', S.flashHour === h ? 'flash' : ''].join(' ');
+    let mid = '', right = '';
+    if (!s) {
+      mid = past ? '<span class="muted">—</span>' : `<span class="tag ok" style="margin:0">${esc(I.open[0])} · <span lang="ne">${esc(I.open[1])}</span></span>`;
+      if (!past) right = `<button class="btn sm" data-act="pick" data-d="${S.day}" data-h="${h}">${bi('pick')}</button>`;
+    } else {
+      mid = `<span class="nm">${esc(s.n)}</span>${s.m ? ` <span class="tag">${esc(I.you[0])}</span>` : ''}${s.p ? ` <span class="tag ok">✓</span>` : ''}`;
+      const a = [];
+      if (s.m && !past) a.push(`<button class="btn warn sm" data-act="cancel" data-d="${S.day}" data-h="${h}">${bi('cancel')}</button>`);
+      if (s.m && hasStarted(S.day, h)) a.push(`<button class="btn ${s.p ? 'ghost' : 'gold'} sm" data-act="prayed" data-d="${S.day}" data-h="${h}">${bi(s.p ? 'prayedDone' : 'prayed')}</button>`);
+      if (!s.m && S.pin) a.push(`<button class="btn warn sm" data-act="remove" data-d="${S.day}" data-h="${h}">${bi('remove')}</button>`);
+      right = a.length ? `<div class="acts">${a.join('')}</div>` : '';
+    }
+    html += `<div class="${cls.replace(/\s+/g, ' ')}" data-hour="${h}"><div class="tm">${esc(range(h))}${loc ? `<span class="loc">🌍 ${esc(loc)}</span>` : ''}${isNow ? `<br><span class="tag">${esc(I.now[0])} · <span lang="ne">${esc(I.now[1])}</span></span>` : ''}</div><div>${mid}</div><div>${right}</div></div>`;
+  });
+  return html;
+}
+
+function requestsHtml() {
+  const [en, ne] = monthLabel(S.month);
+  const list = S.data.requests, act = list.filter((q) => q.status !== 'answered'), ans = list.filter((q) => q.status === 'answered');
+  let html = cols(`<span class="h2">${esc(I.reqFor[0])}</span><div class="muted">${esc(en)}</div>`, `<span class="h2">${esc(I.reqFor[1])}</span><div class="muted">${esc(ne)}</div>`);
+  if (!list.length) return html + `<div class="empty">${esc(I.noReq[0])}<br><span lang="ne">${esc(I.noReq[1])}</span></div>`;
+  const card = (q, i, cls) => `<div class="req ${cls}"><div><span class="n">${i}</span>${esc(q.en)}</div><div lang="ne">${esc(q.ne)}</div></div>`;
+  act.forEach((q, i) => { html += card(q, i + 1, ''); });
+  if (ans.length) {
+    html += cols(`<span class="h2">🙌 ${esc(I.answered[0])}</span>`, `<span class="h2">${esc(I.answered[1])}</span>`);
+    ans.forEach((q, i) => { html += card(q, i + 1, 'ans'); });
+  }
+  return html;
+}
+
+function mineHtml() {
+  const mine = S.data.slots.filter((s) => s.m).sort((a, b) => (a.d + pad(a.h)) < (b.d + pad(b.h)) ? -1 : 1);
+  const [en, ne] = monthLabel(S.month);
+  let html = cols(`<span class="h2">${esc(I.myHoursFor[0])}</span><div class="muted">${esc(en)}</div>`, `<span class="h2">${esc(I.myHoursFor[1])}</span><div class="muted">${esc(ne)}</div>`);
+  const backup = `<div class="card"><div class="h2">${esc(I.backupT[0])}</div><div lang="ne" class="muted">${esc(I.backupT[1])}</div>
+      <p class="muted">${esc(I.backupD[0])}<br><span lang="ne">${esc(I.backupD[1])}</span></p>
+      <div id="myCode" style="font:600 .8rem/1.3 ui-monospace,Menlo,monospace;word-break:break-all;user-select:all;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px">${esc(deviceId)}</div>
+      <div class="acts" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost sm" data-act="copyCode">${bi('copyCodeBtn')}</button></div>
+      <input id="restoreIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(I.restorePh[0])}" aria-label="${esc(I.restorePh[0])}" style="margin-top:10px">
+      <button class="btn block" style="margin-top:8px" data-act="restore">${bi('restoreBtn')}</button></div>`;
+  if (!mine.length) return html + `<div class="empty">${esc(I.noMine[0])}<br><span lang="ne">${esc(I.noMine[1])}</span></div>` + backup;
+  mine.forEach((s) => {
+    const past = isPast(s.d, s.h), dl = dayLabel(s.d), loc = localRange(s.d, s.h);
+    html += `<div class="card ${past ? 'past' : ''}" style="${past ? 'opacity:.7' : ''}">
+      <div class="h2">${esc(range(s.h))}</div><div>${esc(dl[0])}</div><div lang="ne" class="muted">${esc(dl[1])}</div>${loc ? `<div class="loc">🌍 ${esc(loc)}</div>` : ''}
+      <div class="acts" style="justify-content:flex-start;margin-top:10px">
+        ${!past ? `<button class="btn ghost sm" data-act="cal" data-d="${s.d}" data-h="${s.h}">${bi('addCal')}</button>` : ''}
+        ${hasStarted(s.d, s.h) ? `<button class="btn ${s.p ? 'ghost' : 'gold'} sm" data-act="prayed" data-d="${s.d}" data-h="${s.h}">${bi(s.p ? 'prayedDone' : 'prayed')}</button>` : ''}
+        ${!past ? `<button class="btn warn sm" data-act="cancel" data-d="${s.d}" data-h="${s.h}">${bi('cancel')}</button>` : ''}
+      </div></div>`;
+  });
+  return html + backup;
+}
+
+function togetherHtml() {
+  const list = (S.data && S.data.sessions) || [];
+  let html = cols(`<span class="h2">${esc(I.tabTogether[0])}</span>`, `<span class="h2">${esc(I.tabTogether[1])}</span>`);
+  html += `<p class="muted">${esc(I.togetherIntro[0])}<br><span lang="ne">${esc(I.togetherIntro[1])}</span></p>`;
+  if (!list.length) return html + `<div class="empty">${esc(I.noSessions[0])}<br><span lang="ne">${esc(I.noSessions[1])}</span></div>`;
+  list.forEach((q) => {
+    const t = sessionTimes(q), ended = Date.now() >= t.end, me = q.joined.some((j) => j.m), link = safeLink(q.link);
+    const shown = q.joined.slice(0, 12).map((j) => esc(j.n) + (j.c ? ` (${esc(j.c)})` : '')).join(', ') + (q.joined.length > 12 ? ` +${q.joined.length - 12}` : '');
+    html += `<div class="card sess ${ended ? 'ended' : ''}">
+      ${cols(`<span class="h2">${esc(q.en || q.ne)}</span>`, `<span class="h2">${esc(q.ne || q.en)}</span>`)}
+      <div class="when">🕐 ${esc(t.chain)} · ${q.dur} min</div>
+      ${t.local ? `<div class="when"><b>🌍 ${esc(t.local)}</b></div>` : ''}
+      <div class="who">${q.joined.length ? `${q.joined.length} ${esc(I.peopleJoined[0])} · ${q.joined.length} <span lang="ne">${esc(I.peopleJoined[1])}</span><br>${shown}` : `${esc(I.nobodyYet[0])} <span lang="ne">${esc(I.nobodyYet[1])}</span>`}</div>
+      <div class="acts" style="justify-content:flex-start">
+        ${ended ? `<span class="tag">${esc(I.ended[0])} · <span lang="ne">${esc(I.ended[1])}</span></span>` : me
+          ? `<span class="tag ok">${esc(I.joinedTag[0])}</span><button class="btn warn sm" data-act="leaveSes" data-sid="${esc(q.id)}">${bi('leave')}</button><button class="btn ghost sm" data-act="calSes" data-sid="${esc(q.id)}">${bi('addCal')}</button>`
+          : `<button class="btn gold sm" data-act="joinPick" data-sid="${esc(q.id)}">${bi('join')}</button>`}
+        ${link && !ended ? `<a class="btn ghost sm" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${bi('openLink')}</a>` : ''}
+      </div></div>`;
+  });
+  return html;
+}
+
+function translateHtml() {
+  const T = S.tr, toNe = T.dir === 'en-ne';
+  return cols(`<span class="h2">${esc(I.translator[0])}</span>`, `<span class="h2">${esc(I.translator[1])}</span>`) +
+    `<div class="two" style="margin-bottom:10px">
+      <button class="btn ${toNe ? '' : 'ghost'}" data-act="trDir" data-v="en-ne" aria-pressed="${toNe}">${bi('trEnNe')}</button>
+      <button class="btn ${toNe ? 'ghost' : ''}" data-act="trDir" data-v="ne-en" aria-pressed="${!toNe}">${bi('trNeEn')}</button></div>
+    <textarea id="trIn" lang="${toNe ? 'en' : 'ne'}" maxlength="1000" aria-label="${esc(I.translator[0])}">${esc(T.input)}</textarea>
+    <button class="btn gold block" style="margin-top:10px" data-act="trGo">${bi('trGo')}</button>
+    ${T.output ? `<div class="card" style="margin-top:12px"><div id="trOut" lang="${toNe ? 'ne' : 'en'}" style="white-space:pre-wrap;overflow-wrap:anywhere;user-select:text">${esc(T.output)}</div>
+      <button class="btn ghost sm" style="margin-top:10px" data-act="trCopy">${bi('trCopy')}</button></div>` : ''}
+    <p class="muted">${esc(I.trWarn[0])}<br><span lang="ne">${esc(I.trWarn[1])}</span></p>`;
+}
+
+function sessionsEditorHtml() {
+  const min = `${S.month}-01`, max = `${S.month}-${pad(daysIn(S.month))}`;
+  const lab = (k) => `${esc(I[k][0])} · <span lang="ne">${esc(I[k][1])}</span>`;
+  let h = `<hr style="border:0;border-top:1px solid var(--line);margin:18px 0">` + cols(`<span class="h2">${esc(I.groupTimes[0])}</span>`, `<span class="h2">${esc(I.groupTimes[1])}</span>`);
+  S.sdraft.forEach((q, i) => {
+    const durs = [30, 45, 60, 90, 120].concat([30, 45, 60, 90, 120].includes(Number(q.dur)) ? [] : [Number(q.dur)]).sort((a, b) => a - b);
+    h += `<div class="item"><div class="two">
+        <div><label class="f">${lab('fDate')}</label><input type="date" min="${min}" max="${max}" data-si="${i}" data-f="d" value="${esc(q.d)}"></div>
+        <div><label class="f">${lab('fTime')}</label><input type="time" data-si="${i}" data-f="t" value="${esc(q.t)}"></div></div>
+      <label class="f">${lab('fTitle')}</label>
+      <div class="two"><input type="text" maxlength="120" placeholder="${esc(I.english[0])}" data-si="${i}" data-f="en" value="${esc(q.en)}">
+        <input type="text" lang="ne" maxlength="120" placeholder="${esc(I.nepali[1])}" data-si="${i}" data-f="ne" value="${esc(q.ne)}"></div>
+      <div class="two"><div><label class="f">${lab('fMinutes')}</label><select class="fld" data-si="${i}" data-f="dur">${durs.map((m) => `<option value="${m}" ${Number(q.dur) === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+        <div><label class="f">${lab('fLink')}</label><input type="url" inputmode="url" maxlength="300" data-si="${i}" data-f="link" value="${esc(q.link)}" placeholder="https://"></div></div>
+      <div class="acts" style="margin-top:8px"><button class="btn ghost sm" data-act="trTitle" data-si="${i}">${bi('trDraft')}</button><button class="btn warn sm" data-act="delSes" data-si="${i}">${bi('del')}</button></div></div>`;
+  });
+  h += `<button class="btn ghost block" data-act="addSes">+ ${bi('addSession')}</button>
+    <button class="btn gold block" style="margin-top:10px" data-act="saveSes">${bi('saveSessions')}</button>`;
+  return h;
+}
+
+function adminHtml() {
+  if (!S.pin) {
+    return `<div class="card"><label class="f" for="pinIn">${esc(I.adminPin[0])} · <span lang="ne">${esc(I.adminPin[1])}</span></label>
+      <input id="pinIn" type="password" inputmode="numeric" autocomplete="off" aria-label="${esc(I.adminPin[0])}">
+      <button class="btn block" style="margin-top:10px" data-act="unlock">${bi('unlock')}</button>
+      ${isDemo() ? '<p class="muted">Demo PIN: 1234</p>' : ''}</div>`;
+  }
+  if (!S.draft || S.draftMonth !== S.month) startReqDraft();
+  if (!S.sdraft || S.sdraftMonth !== S.month) startSesDraft();
+  const [en, ne] = monthLabel(S.month);
+  let html = cols(`<span class="h2">${esc(I.reqFor[0])}</span><div class="muted">${esc(en)}</div>`, `<span class="h2">${esc(I.reqFor[1])}</span><div class="muted">${esc(ne)}</div>`);
+  html += `<p class="muted">${esc(I.adminHint[0])}<br><span lang="ne">${esc(I.adminHint[1])}</span></p>`;
+  S.draft.forEach((q, i) => {
+    html += `<div class="item"><div class="two">
+        <div><label class="f">${esc(I.english[0])}</label><textarea data-i="${i}" data-f="en">${esc(q.en)}</textarea></div>
+        <div><label class="f" lang="ne">${esc(I.nepali[1])}</label><textarea lang="ne" data-i="${i}" data-f="ne">${esc(q.ne)}</textarea></div></div>
+      <div class="row2" style="margin-top:8px;flex-wrap:wrap">
+        <label class="chk"><input type="checkbox" data-act="ans" data-i="${i}" ${q.status === 'answered' ? 'checked' : ''}> ${bi('markAns')}</label>
+        <div class="acts">
+          <button class="btn ghost sm" data-act="trAdmin" data-i="${i}">${bi('trDraft')}</button>
+          <button class="btn ghost sm" data-act="up" data-i="${i}" aria-label="${esc(I.moveUp[0])}">↑</button>
+          <button class="btn ghost sm" data-act="down" data-i="${i}" aria-label="${esc(I.moveDown[0])}">↓</button>
+          <button class="btn warn sm" data-act="del" data-i="${i}">${bi('del')}</button>
+        </div></div></div>`;
+  });
+  html += `<button class="btn ghost block" data-act="addReq">+ ${bi('addReq')}</button>
+    <button class="btn gold block" style="margin-top:10px" data-act="saveReq">${bi('saveReq')}</button>`;
+  html += sessionsEditorHtml();
+  html += `<hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <label class="f" for="rmIn">${esc(I.rmName[0])} · <span lang="ne">${esc(I.rmName[1])}</span></label>
+    <div class="two"><input id="rmIn" type="text" maxlength="40" autocomplete="off"><button class="btn warn" data-act="rmName">${bi('rmBtn')}</button></div>
+    <button class="btn ghost block" style="margin-top:14px" data-act="archive">${bi('archive')}</button>
+    <button class="btn ghost block" style="margin-top:10px" data-act="lock">${bi('lock')}</button>`;
+  return html;
+}
+
+function render() {
+  headerParts();
+  let html = bannerHtml();
+  if (S.error && !S.data) {
+    html += `<div class="empty">${esc(I.tryAgain[0])}<br><span lang="ne">${esc(I.tryAgain[1])}</span><br><br><button class="btn" data-act="retry">${bi('retry')}</button></div>`;
+  } else if (!S.data) {
+    html += `<div class="empty">${esc(I.loading[0])} · <span lang="ne">${esc(I.loading[1])}</span></div>`;
+  } else {
+    html += ({ slots: slotsHtml, together: togetherHtml, requests: requestsHtml, mine: mineHtml, translate: translateHtml, admin: adminHtml }[S.view] || slotsHtml)();
+  }
+  const sy = window.scrollY;
+  $('#main').innerHTML = html;
+  $('#tabs').innerHTML = tabsHtml();
+  const strip = $('#strip');
+  if (strip) { const b = strip.querySelector('[aria-pressed="true"]'); if (b) strip.scrollLeft = b.offsetLeft - strip.clientWidth / 2 + b.clientWidth / 2; }
+  if (S.flashHour != null) {
+    const row = document.querySelector(`.slot[data-hour="${S.flashHour}"]`);
+    if (row) row.scrollIntoView({ block: 'center' });
+    S.flashHour = null;
+  } else window.scrollTo(0, sy);
+}
+
+/* ====================================================================
+   ACTIONS
+   ==================================================================== */
+function openSheet(html) { $('#sheet').innerHTML = `<div class="scrim" data-act="closeSheet"></div><div class="panel">${html}</div>`; $('#sheet').classList.add('open'); }
+function closeSheet() { $('#sheet').classList.remove('open'); $('#sheet').innerHTML = ''; }
+
+async function run(fn) {
+  if (S.busy) return; S.busy = true;
+  try { await fn(); } catch (e) {
+    if (e.message === 'taken') { closeSheet(); toast('taken'); }
+    else if (/admin PIN/i.test(e.message)) { toast('wrongPin'); S.pin = ''; try { sessionStorage.removeItem('agc_pin'); } catch (x) {} render(); }
+    else { if (!/first name/i.test(e.message || '')) closeSheet(); toast(null, e.message || 'Error'); }
+    await load(true);
+  } finally { S.busy = false; }
+}
+const post = (b) => Api.post(Object.assign({ month: S.month }, b));
+
+async function translateInto(text, from, to, done) {
+  if (S.busy) return; S.busy = true; toast('translating');
+  try {
+    const r = await Api.post({ action: 'translate', text, from, to, pin: S.pin || undefined });
+    done(r.text);
+  } catch (e) {
+    if (e.message === 'DEMO_NO_TRANSLATE') toast('trDemo'); else toast(null, e.message || 'Error');
+  } finally { S.busy = false; }
+}
+
+async function onAct(act, el, ev) {
+  const d = el.dataset.d, h = Number(el.dataset.h), i = Number(el.dataset.i);
+  switch (act) {
+    case 'tab': S.view = el.dataset.v; if (S.view === 'admin' && S.pin && S.data) { if (S.draftMonth !== S.month) startReqDraft(); if (S.sdraftMonth !== S.month) startSesDraft(); } render(); window.scrollTo(0, 0); break;
+    case 'month': S.month = el.dataset.m; S.day = null; S.draftMonth = null; S.sdraftMonth = null; S.data = null; await load(); break;
+    case 'day': S.day = d; render(); break;
+    case 'retry': await load(); break;
+    case 'dismissIos': LS.set('agc_ios_dismissed', true); render(); break;
+    case 'install': if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; render(); } break;
+    case 'closeSheet': closeSheet(); break;
+    case 'nextOpen': {
+      const idx = slotIndex(), dim = daysIn(S.month);
+      for (let dd = 1; dd <= dim; dd++) for (const hh of hoursList()) {
+        const date = `${S.month}-${pad(dd)}`;
+        if (isPast(date, hh) || idx.has(`${date}|${hh}`)) continue;
+        S.day = date; S.flashHour = hh; render(); return;
+      }
+      toast('allCovered'); break;
+    }
+    case 'pick': {
+      const dl = dayLabel(d), nm = LS.get('agc_name', '');
+      openSheet(`<div class="h2">${esc(I.confirmQ[0])}</div><div lang="ne" class="muted">${esc(I.confirmQ[1])}</div>
+        <p><b>${esc(range(h))}</b><br>${esc(dl[0])}<br><span lang="ne">${esc(dl[1])}</span></p>
+        <label class="f" for="nameIn">${esc(I.firstName[0])} · <span lang="ne">${esc(I.firstName[1])}</span></label>
+        <input id="nameIn" type="text" maxlength="40" autocomplete="given-name" value="${esc(nm)}">
+        <p class="muted">${esc(I.firstOnly[0])} <span lang="ne">${esc(I.firstOnly[1])}</span></p>
+        <div class="two"><button class="btn ghost" data-act="closeSheet">${bi('close')}</button>
+        <button class="btn gold" data-act="confirmPick" data-d="${d}" data-h="${h}">${bi('confirm')}</button></div>`);
+      setTimeout(() => { const n = $('#nameIn'); if (n && !n.value) n.focus(); }, 60);
+      break;
+    }
+    case 'confirmPick': {
+      const name = firstName($('#nameIn') ? $('#nameIn').value : '');
+      if (!name) { toast('nameNeeded'); return; }
+      LS.set('agc_name', name);
+      await run(async () => { await post({ action: 'claim', date: d, hour: h, name }); closeSheet(); toast('picked'); await load(true); });
+      break;
+    }
+    case 'cancel': await run(async () => { await post({ action: 'release', date: d, hour: h }); toast('released'); await load(true); }); break;
+    case 'remove': await run(async () => { await post({ action: 'release', date: d, hour: h, pin: S.pin }); await load(true); }); break;
+    case 'prayed': await run(async () => { await post({ action: 'prayed', date: d, hour: h }); await load(true); }); break;
+    case 'cal': downloadIcs(d, h, S.tz); break;
+    case 'copyCode': {
+      try { await navigator.clipboard.writeText(deviceId); toast('copied'); }
+      catch (e) { const o = $('#myCode'); if (o && window.getSelection) { const r = document.createRange(); r.selectNodeContents(o); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } }
+      break;
+    }
+    case 'restore': {
+      const code = (($('#restoreIn') || {}).value || '').trim();
+      if (!/^[A-Za-z0-9-]{16,64}$/.test(code)) { toast('restoreBad'); return; }
+      LS.set('agc_device', code); location.reload(); break;
+    }
+    case 'rmName': {
+      const name = firstName(($('#rmIn') || {}).value || ''); if (!name) { toast('nameNeeded'); return; }
+      await run(async () => { const r = await post({ action: 'removeName', name, pin: S.pin }); toast(null, I.rmDone[0] + ' · ' + I.rmDone[1] + ': ' + (r.removed || 0)); await load(true); });
+      break;
+    }
+    case 'unlock': {
+      const pin = ($('#pinIn') || {}).value || '';
+      await run(async () => { await post({ action: 'checkPin', pin }); S.pin = pin; try { sessionStorage.setItem('agc_pin', pin); } catch (x) {} startDraft(); render(); });
+      break;
+    }
+    case 'lock': S.pin = ''; try { sessionStorage.removeItem('agc_pin'); } catch (x) {} S.draft = null; S.draftMonth = null; S.sdraft = null; S.sdraftMonth = null; render(); break;
+    case 'addReq': S.draft.push({ en: '', ne: '', status: 'active' }); render(); break;
+    case 'del': S.draft.splice(i, 1); render(); break;
+    case 'up': if (i > 0) { [S.draft[i - 1], S.draft[i]] = [S.draft[i], S.draft[i - 1]]; render(); } break;
+    case 'down': if (i < S.draft.length - 1) { [S.draft[i + 1], S.draft[i]] = [S.draft[i], S.draft[i + 1]]; render(); } break;
+    case 'saveReq': await run(async () => { await post({ action: 'saveRequests', pin: S.pin, requests: S.draft }); toast('saved'); S.draftMonth = null; await load(true); startReqDraft(); }); break;
+    case 'joinPick': {
+      const q = S.data.sessions.find((x) => x.id === el.dataset.sid); if (!q) return;
+      const t = sessionTimes(q);
+      openSheet(`<div class="h2">${esc(I.joinQ[0])}</div><div lang="ne" class="muted">${esc(I.joinQ[1])}</div>
+        <p><b>${esc(q.en || q.ne)}</b><br>${esc(t.chain)}${t.local ? `<br>🌍 ${esc(t.local)}` : ''}</p>
+        <label class="f" for="nameIn">${esc(I.firstName[0])} · <span lang="ne">${esc(I.firstName[1])}</span></label>
+        <input id="nameIn" type="text" maxlength="40" autocomplete="given-name" value="${esc(LS.get('agc_name', ''))}">
+        <label class="f" for="placeIn">${esc(I.placeQ[0])} · <span lang="ne">${esc(I.placeQ[1])}</span></label>
+        <input id="placeIn" type="text" maxlength="40" value="${esc(LS.get('agc_place', ''))}">
+        <p class="muted">${esc(I.firstOnly[0])} <span lang="ne">${esc(I.firstOnly[1])}</span></p>
+        <div class="two"><button class="btn ghost" data-act="closeSheet">${bi('close')}</button>
+        <button class="btn gold" data-act="confirmJoin" data-sid="${esc(q.id)}">${bi('confirm')}</button></div>`);
+      break;
+    }
+    case 'confirmJoin': {
+      const name = firstName($('#nameIn') ? $('#nameIn').value : ''), place = ($('#placeIn') ? $('#placeIn').value : '').trim();
+      if (!name) { toast('nameNeeded'); return; }
+      LS.set('agc_name', name); LS.set('agc_place', place);
+      await run(async () => { await post({ action: 'join', sessionId: el.dataset.sid, name, country: place }); closeSheet(); toast('sessionJoined'); await load(true); });
+      break;
+    }
+    case 'leaveSes': await run(async () => { await post({ action: 'leave', sessionId: el.dataset.sid }); toast('sessionLeft'); await load(true); }); break;
+    case 'calSes': {
+      const q = S.data.sessions.find((x) => x.id === el.dataset.sid); if (!q) return;
+      const t = sessionTimes(q), link = safeLink(q.link);
+      downloadText(`prayer-group-${q.d}.ics`, icsEvent(t.start, t.end, `${q.en || q.ne} | AGC प्रार्थना शृङ्खला`, `agc-s-${q.id}@prayerchain`, `Group prayer.${link ? ' Join: ' + link : ''}`));
+      break;
+    }
+    case 'trDir': S.tr.dir = el.dataset.v; S.tr.output = ''; render(); break;
+    case 'trGo': {
+      const text = (S.tr.input || '').trim(); if (!text) { toast('trEmpty'); return; }
+      const [from, to] = S.tr.dir.split('-');
+      await translateInto(text, from, to, (out) => { S.tr.output = out; $('#toast').style.display = 'none'; render(); });
+      break;
+    }
+    case 'trCopy': {
+      try { await navigator.clipboard.writeText(S.tr.output); toast('copied'); }
+      catch (e) { const o = $('#trOut'); if (o && window.getSelection) { const r = document.createRange(); r.selectNodeContents(o); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); } }
+      break;
+    }
+    case 'trAdmin': {
+      const q = S.draft[i]; if (!q || !q.en.trim()) { toast('trEmpty'); return; }
+      await translateInto(q.en, 'en', 'ne', (out) => { q.ne = out; render(); toast('trDraftNote'); });
+      break;
+    }
+    case 'trTitle': {
+      const q = S.sdraft[Number(el.dataset.si)]; if (!q || !q.en.trim()) { toast('trEmpty'); return; }
+      await translateInto(q.en, 'en', 'ne', (out) => { q.ne = out; render(); toast('trDraftNote'); });
+      break;
+    }
+    case 'addSes': S.sdraft.push({ id: '', d: S.month === curMonth() ? S.now.date : `${S.month}-01`, t: '20:00', dur: 60, en: '', ne: '', link: '' }); render(); break;
+    case 'delSes': S.sdraft.splice(Number(el.dataset.si), 1); render(); break;
+    case 'saveSes': await run(async () => { await post({ action: 'saveSessions', pin: S.pin, sessions: S.sdraft }); toast('saved'); S.sdraftMonth = null; await load(true); startSesDraft(); }); break;
+    case 'archive': {
+      if (!confirm(I.confirmArch[0] + '\n' + I.confirmArch[1])) return;
+      const prev = (() => { let [y, m] = curMonth().split('-').map(Number); m--; if (m < 1) { m = 12; y--; } return `${y}-${pad(m)}`; })();
+      await run(async () => { const r = await Api.post({ action: 'archive', month: prev, pin: S.pin }); toast(null, r.archived ? I.archived[0] + ' · ' + I.archived[1] : (r.note || 'Nothing to archive')); });
+      break;
+    }
+  }
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]');
+  if (!el || el.type === 'checkbox') return;
+  onAct(el.dataset.act, el, ev);
+});
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.matches && el.matches('input[data-act="ans"]')) { S.draft[Number(el.dataset.i)].status = el.checked ? 'answered' : 'active'; }
+  if (el.id === 'tz') { S.vtz = validTz(el.value) || S.vtz; LS.set('agc_vtz', S.vtz); render(); }
+  if (el.matches && el.matches('select[data-si]')) { S.sdraft[Number(el.dataset.si)].dur = Number(el.value); }
+});
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (el.matches && el.matches('textarea[data-i]')) { S.draft[Number(el.dataset.i)][el.dataset.f] = el.value; }
+  if (el.matches && el.matches('input[data-si]')) { S.sdraft[Number(el.dataset.si)][el.dataset.f] = el.value; }
+  if (el.id === 'trIn') { S.tr.input = el.value; }
+});
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.installEvt = e; render(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(true); });
+setInterval(() => { if (document.visibilityState === 'visible' && !S.busy) load(true); }, 90000);
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+render();
+load();
+</script>
+</body>
+</html>
