@@ -496,6 +496,16 @@ async function t(name, fn) {
     A1.close(); B1.close();
   });
 
+
+  await t('Requests tab links to the Bible on YouVersion: NNRV (Nepali) and NASB 1995 (English)', async () => {
+    const D = boot(); await sleep(250); await D.tab('requests');
+    const links = D.$$('a.btn').map((a) => a.href);
+    assert(links.includes('https://www.bible.com/bible/1483/PSA.1.NNRV'), 'NNRV link');
+    assert(links.includes('https://www.bible.com/bible/100/PSA.1.NASB1995'), 'NASB 1995 link');
+    assert(D.$$('a.btn').every((a) => a.rel.includes('noopener')));
+    D.close();
+  });
+
   assert.deepStrictEqual(P1.errors.concat(P2.errors), [], 'no script errors in live run');
   P1.close(); P2.close();
 

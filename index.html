@@ -55,6 +55,7 @@ main{padding:14px 14px 0}
 .row2{display:flex;justify-content:space-between;gap:8px;align-items:center}
 button{font:inherit;color:inherit;cursor:pointer}
 .btn{border:0;border-radius:12px;padding:10px 14px;min-height:48px;background:var(--navy);color:#fff;font-weight:600}
+a.btn{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
 .btn.gold{background:var(--gold);color:#1b1500}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
 .btn.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}
@@ -252,6 +253,8 @@ const I = {
   copied:     ['Copied', 'कपी भयो'],
   refresh:    ['Refresh', 'रिफ्रेस गर्नुहोस्'],
   lastUpd:    ['Updated', 'अपडेट'],
+  bibleT:     ['Read the Bible', 'बाइबल पढ्नुहोस्'],
+  bibleD:     ['Opens in the YouVersion Bible app or website.', 'YouVersion बाइबल एप वा वेबसाइटमा खुल्छ।'],
   chainDay:   ['Prayer chain day', 'प्रार्थना शृङ्खलाको दिन'],
   chainRule:  ['The first Saturday of every month · all 24 hours', 'हरेक महिनाको पहिलो शनिबार · सबै २४ घण्टा'],
   chainDone:  ['This month’s prayer chain is finished. See the next month above.', 'यस महिनाको प्रार्थना शृङ्खला सकिएको छ। माथि अर्को महिना हेर्नुहोस्।'],
@@ -687,14 +690,19 @@ function requestsHtml() {
   const [en, ne] = monthLabel(S.month);
   const list = S.data.requests, act = list.filter((q) => q.status !== 'answered'), ans = list.filter((q) => q.status === 'answered');
   let html = cols(`<span class="h2">${esc(I.reqFor[0])}</span><div class="muted">${esc(en)}</div>`, `<span class="h2">${esc(I.reqFor[1])}</span><div class="muted">${esc(ne)}</div>`);
-  if (!list.length) return html + `<div class="empty">${esc(I.noReq[0])}<br><span lang="ne">${esc(I.noReq[1])}</span></div>`;
+  // Bible links (YouVersion): NNRV = version 1483, NASB 1995 = version 100. The text itself is licensed, so the app links to it.
+  const bible = `<div class="card"><div class="h2">📖 ${esc(I.bibleT[0])} · <span lang="ne">${esc(I.bibleT[1])}</span></div>
+    <p class="muted" style="margin:4px 0 10px">${esc(I.bibleD[0])}<br><span lang="ne">${esc(I.bibleD[1])}</span></p>
+    <div class="two"><a class="btn gold" href="https://www.bible.com/bible/1483/PSA.1.NNRV" target="_blank" rel="noopener noreferrer"><span lang="ne">नेपाली</span> (NNRV)</a>
+    <a class="btn" href="https://www.bible.com/bible/100/PSA.1.NASB1995" target="_blank" rel="noopener noreferrer">English (NASB 1995)</a></div></div>`;
+  if (!list.length) return html + `<div class="empty">${esc(I.noReq[0])}<br><span lang="ne">${esc(I.noReq[1])}</span></div>` + bible;
   const card = (q, i, cls) => `<div class="req ${cls}"><div><span class="n">${i}</span>${esc(q.en)}</div><div lang="ne">${esc(q.ne)}</div></div>`;
   act.forEach((q, i) => { html += card(q, i + 1, ''); });
   if (ans.length) {
     html += cols(`<span class="h2">🙌 ${esc(I.answered[0])}</span>`, `<span class="h2">${esc(I.answered[1])}</span>`);
     ans.forEach((q, i) => { html += card(q, i + 1, 'ans'); });
   }
-  return html;
+  return html + bible;
 }
 
 function mineHtml() {
