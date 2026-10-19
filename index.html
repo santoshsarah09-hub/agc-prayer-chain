@@ -250,6 +250,8 @@ const I = {
   trEmpty:    ['Type or paste some text first.', 'पहिले केही पाठ लेख्नुहोस् वा टाँस्नुहोस्।'],
   translating:['Translating…', 'अनुवाद हुँदै छ…'],
   copied:     ['Copied', 'कपी भयो'],
+  refresh:    ['Refresh', 'रिफ्रेस गर्नुहोस्'],
+  lastUpd:    ['Updated', 'अपडेट'],
   chainDay:   ['Prayer chain day', 'प्रार्थना शृङ्खलाको दिन'],
   chainRule:  ['The first Saturday of every month · all 24 hours', 'हरेक महिनाको पहिलो शनिबार · सबै २४ घण्टा'],
   chainDone:  ['This month’s prayer chain is finished. See the next month above.', 'यस महिनाको प्रार्थना शृङ्खला सकिएको छ। माथि अर्को महिना हेर्नुहोस्।'],
@@ -549,7 +551,7 @@ async function load(quiet) {
   if (!quiet) { S.error = null; render(); }
   try {
     const d = await Api.state(S.month);
-    S.data = d; S.tz = d.config.tz || S.tz; S.offline = false; S.error = null;
+    S.data = d; S.tz = d.config.tz || S.tz; S.offline = false; S.error = null; S.updatedAt = Date.now();
     LS.set('agc_cache_' + S.month, d);
   } catch (e) {
     if (/not open/i.test(e.message || '') && !load.retrying) {
@@ -633,7 +635,9 @@ function slotsHtml() {
     <div class="row2"><div class="h2">${esc(I.coverage[0])} · <span lang="ne">${esc(I.coverage[1])}</span></div><div class="h2">${pct}%</div></div>
     <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
     <div class="muted">${filled} ${esc(I.of[0])} ${total} ${esc(I.hours[0])} · <span lang="ne">${total} ${esc(I.of[1])} ${filled} ${esc(I.hours[1])}</span>${prayed ? ` · ✓ ${prayed}` : ''}</div>
-    <button class="btn ghost block" style="margin-top:10px" data-act="nextOpen">${bi('nextOpen')}</button></div>`;
+    <button class="btn ghost block" style="margin-top:10px" data-act="nextOpen">${bi('nextOpen')}</button>
+    <div class="row2" style="margin-top:8px"><span class="muted" style="font-size:.8rem">${S.updatedAt ? `${esc(I.lastUpd[0])} · <span lang="ne">${esc(I.lastUpd[1])}</span> ${esc(fmtTz(S.updatedAt, S.vtz, { hour: 'numeric', minute: '2-digit', second: '2-digit' }))}` : ''}</span>
+    <button class="btn ghost sm" data-act="refresh">↻ ${bi('refresh')}</button></div></div>`;
 
   // Chain-day banner (when the chain runs on one day a month) or day strip (every-day mode)
   const single = cdates.length === 1;
@@ -866,6 +870,7 @@ async function onAct(act, el, ev) {
     case 'month': S.month = el.dataset.m; S.day = null; S.draftMonth = null; S.sdraftMonth = null; S.data = null; await load(); break;
     case 'day': S.day = d; render(); break;
     case 'retry': await load(); break;
+    case 'refresh': if (!S.busy) { S.busy = true; try { await load(true); } finally { S.busy = false; } render(); } break;
     case 'dismissIos': LS.set('agc_ios_dismissed', true); render(); break;
     case 'install': if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; render(); } break;
     case 'closeSheet': closeSheet(); break;
@@ -1007,7 +1012,7 @@ document.addEventListener('input', (ev) => {
 });
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.installEvt = e; render(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(true); });
-setInterval(() => { if (document.visibilityState === 'visible' && !S.busy) load(true); }, 90000);
+setInterval(() => { if (document.visibilityState === 'visible' && !S.busy) load(true); }, 20000);   // keeps everyone's view current; the server's 20-second copy keeps this light
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 render();

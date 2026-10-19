@@ -476,6 +476,26 @@ async function t(name, fn) {
     D.close();
   });
 
+
+  await t('two phones: a pick shows on the other phone as taken (name, no Pick button) and coverage goes up', async () => {
+    const be3 = makeBackend(); Object.assign(be3.clock, chicagoNow()); be3.call('setup');
+    const sh = async (url, opts) => { const u = new URL(url); const body = opts && opts.method === 'POST' ? be3.post(JSON.parse(opts.body)) : be3.get(Object.fromEntries(u.searchParams)); return { text: async () => JSON.stringify(body) }; };
+    const A1 = boot({ api: 'https://script.test/exec', fetchImpl: sh, chain: true }), B1 = boot({ api: 'https://script.test/exec', fetchImpl: sh, chain: true });
+    await sleep(300);
+    assert(B1.text().includes('0 of 24'));
+    const h = A1.$('.slot.open [data-act="pick"]').dataset.h;
+    await A1.click(A1.$(`.slot[data-hour="${h}"] [data-act="pick"]`)); A1.type('#nameIn', 'Bimala'); await A1.click('[data-act="confirmPick"]');
+    assert(A1.text().includes('1 of 24') && A1.text().includes('4%'), 'own phone updates at once');
+    await B1.click('[data-act="refresh"]');
+    const row = B1.$(`.slot[data-hour="${h}"]`);
+    assert(row.textContent.includes('Bimala'), 'name visible to others');
+    assert(!row.querySelector('[data-act="pick"]') && !row.classList.contains('open'), 'no longer available');
+    assert(B1.text().includes('1 of 24') && B1.text().includes('4%'), 'coverage updated');
+    assert(B1.text().includes('Updated'));
+    assert.deepStrictEqual(A1.errors.concat(B1.errors), []);
+    A1.close(); B1.close();
+  });
+
   assert.deepStrictEqual(P1.errors.concat(P2.errors), [], 'no script errors in live run');
   P1.close(); P2.close();
 
