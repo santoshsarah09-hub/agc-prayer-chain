@@ -20,6 +20,8 @@ class Sheet {
   getName() { return this.name; }
   getMaxRows() { return 1000; }
   getMaxColumns() { return 26; }
+  getLastRow() { return this.rows.length; }
+  getParent() { return { getSpreadsheetTimeZone: () => 'America/Chicago' }; }
   getDataRange() { const rows = this.rows; return { getValues: () => rows.map((r) => r.slice()) }; }
   appendRow(r) { this.rows.push(r.slice()); }
   deleteRow(n) { assert(n >= 1 && n <= this.rows.length, 'deleteRow out of range ' + n); this.rows.splice(n - 1, 1); }
@@ -67,7 +69,12 @@ const sandbox = {
   LanguageApp: { translate: (text, from, to) => { translateCalls.push({ text, from, to }); if (text === 'FAIL') throw new Error('boom'); return `[${to}] ${text}`; } },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: (s) => ({ s, setMimeType() { return this; }, getContent() { return this.s; } }) },
   Utilities: {
-    formatDate: () => `${clock.date}-${String(clock.hour).padStart(2, '0')}-${String(clock.minute || 0).padStart(2, '0')}`,   // only 'yyyy-MM-dd-HH-mm' is used
+    formatDate: (d, tz, pat) => {
+      if (pat === 'yyyy-MM-dd-HH-mm') return `${clock.date}-${String(clock.hour).padStart(2, '0')}-${String(clock.minute || 0).padStart(2, '0')}`;   // "now"
+      const p = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
+      const g = (t) => p.find((x) => x.type === t).value;
+      return pat.replace('yyyy', g('year')).replace('MM', g('month')).replace('dd', g('day')).replace('HH', g('hour')).replace('mm', g('minute'));
+    },
     getUuid: () => require('crypto').randomUUID()
   },
   ScriptApp: {

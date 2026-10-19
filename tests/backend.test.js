@@ -391,4 +391,23 @@ t('first-Saturday rule: hours can only be picked on the chain day; all 24 hours 
   assert.strictEqual(sum['Chain day'], '2026-11-07');
 });
 
+t('rows that Google Sheets turned into real dates still show in the app (the bug seen on the live sheet)', () => {
+  const e = makeBackend();
+  Object.assign(e.clock, { date: '2026-10-19', hour: 18, minute: 0 });
+  e.call('setup');
+  const slots = e.sheetsById[e.props.SHEET_ID].getSheetByName('Slots');
+  // What the live sheet held: month and date stored as dates, hour as a number.
+  const D = (s) => vm.runInContext(`new Date('${s}')`, e.ctx);
+  slots.rows.push(['2026-11-07-05', D('2026-11-01T05:00:00Z'), D('2026-11-07T06:00:00Z'), 5, 'Bina', 'dev-bina-0001', '2026-10-19T23:21:55.626Z', '']);
+  const st = e.get({ action: 'state', month: '2026-11', deviceId: 'dev-bina-0001' });
+  assert.strictEqual(st.slots.length, 1, 'the row is found');
+  assert.deepStrictEqual([st.slots[0].d, st.slots[0].h, st.slots[0].n, st.slots[0].m], ['2026-11-07', 5, 'Bina', true]);
+  assert(e.post({ action: 'claim', deviceId: 'dev-x-00001', month: '2026-11', date: '2026-11-07', hour: 5, name: 'Other' }).error === 'taken', 'the hour is unavailable');
+  // New rows are written as plain text.
+  assert(e.post({ action: 'claim', deviceId: 'dev-x-00001', month: '2026-11', date: '2026-11-07', hour: 6, name: 'Other' }).ok);
+  const last = slots.rows[slots.rows.length - 1];
+  assert(last.every((x) => typeof x === 'string'), 'written as text');
+  assert.strictEqual(e.get({ action: 'state', month: '2026-11' }).slots.length, 2);
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ', some FAILED' : ''}`);

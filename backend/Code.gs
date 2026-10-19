@@ -204,14 +204,35 @@ function liveSheets_() {
   };
 }
 
+// Reads a sheet as rows of plain strings. Google Sheets sometimes turns typed text such as "2026-11" or
+// "2026-11-07" into real dates (and "20:00" into a time). Those are turned back into the exact text the app uses,
+// based on the column name, so older rows written that way still show up in the app.
 function rows_(sheet) {
   var v = sheet.getDataRange().getValues();
+  if (!v.length) return [];
+  var head = v[0].map(String);
+  var tz = CONFIG.TZ;
+  try { tz = sheet.getParent().getSpreadsheetTimeZone() || CONFIG.TZ; } catch (e) { /* keep default */ }
+  var fmt = head.map(function (h) {
+    return h === 'month' ? 'yyyy-MM' : h === 'date' ? 'yyyy-MM-dd' : h === 'time' ? 'HH:mm' : null;
+  });
   var out = [];
   for (var i = 1; i < v.length; i++) {
     if (String(v[i][0]) === '') continue;
-    out.push({ row: i + 1, v: v[i].map(String) });
+    out.push({ row: i + 1, v: v[i].map(function (x, c) {
+      if (x instanceof Date) return fmt[c] ? Utilities.formatDate(x, tz, fmt[c]) : x.toISOString();
+      return String(x);
+    }) });
   }
   return out;
+}
+
+// Adds a row as plain text (unlike appendRow, which lets Sheets turn "2026-11-07" into a date).
+function appendText_(sheet, values) {
+  var r = sheet.getLastRow() + 1;
+  var rng = sheet.getRange(r, 1, 1, values.length);
+  rng.setNumberFormat('@');
+  rng.setValues([values.map(String)]);
 }
 
 function cleanName_(raw) {
@@ -316,7 +337,7 @@ function claim_(body) {
   });
   if (taken) throw new Error('taken');
   if (mine >= CONFIG.MAX_PER_DEVICE) throw new Error('You have reached the limit of ' + CONFIG.MAX_PER_DEVICE + ' hours this month.');
-  L.slots.appendRow([s.key, s.month, s.date, String(s.hour), name, deviceId, new Date().toISOString(), '']);
+  appendText_(L.slots, [s.key, s.month, s.date, String(s.hour), name, deviceId, new Date().toISOString(), '']);
   return { ok: true };
 }
 
@@ -384,7 +405,7 @@ function saveRequests_(body) {
   list.forEach(function (q, idx) {
     var en = cleanText_(q.en), ne = cleanText_(q.ne);
     if (!en && !ne) return;
-    L.reqs.appendRow([Utilities.getUuid(), month, en, ne, q.status === 'answered' ? 'answered' : 'active', String(idx + 1)]);
+    appendText_(L.reqs, [Utilities.getUuid(), month, en, ne, q.status === 'answered' ? 'answered' : 'active', String(idx + 1)]);
     n++;
   });
   return { ok: true, saved: n };
@@ -453,7 +474,7 @@ function saveSessions_(body) {
   clean.forEach(function (c) { keep[c.id] = true; });
   for (var i = old.length - 1; i >= 0; i--) L.sessions.deleteRow(old[i].row);
   clean.forEach(function (c) {
-    L.sessions.appendRow([c.id, month, c.date, c.time, String(c.dur), c.en, c.ne, c.link]);
+    appendText_(L.sessions, [c.id, month, c.date, c.time, String(c.dur), c.en, c.ne, c.link]);
   });
   // People who joined a session that was removed go with it.
   var joins = rows_(L.joins).filter(function (j) { return oldIds[j.v[0]] && !keep[j.v[0]]; });
@@ -478,7 +499,7 @@ function join_(body) {
     return { ok: true };
   }
   if (joins.length >= 500) throw new Error('This group time is full.');
-  L.joins.appendRow([id, name, place, deviceId, new Date().toISOString()]);
+  appendText_(L.joins, [id, name, place, deviceId, new Date().toISOString()]);
   return { ok: true };
 }
 
