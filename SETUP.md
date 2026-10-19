@@ -3,7 +3,7 @@
 Two parts: (1) the **backend** goes in your Google account so all data lives in your Drive, (2) the **app** goes on a free web address so people can open it on iPhone and Android.
 
 ## What is in the app
-- **Pick a Time** — every hour of every day of the month, first names only, coverage meter, "find the next open hour".
+- **Pick a Time** — the prayer chain runs on the **first Saturday of every month, 12 AM to 12 AM Central (24 one-hour slots)**. First names only, coverage meter, "find the next open hour". After a month's chain day has passed, the app opens on the next month.
 - **Pray Together** — group prayer times you announce for people anywhere in the world. Each person sees the time in their own time zone, taps Join (first name + optional country/city), and sees who else joined. Optional meeting link (Zoom, Meet, WhatsApp, etc.).
 - **Requests** — the month's prayer requests, English and Nepali side by side.
 - **My Hours** — your hours, "I prayed" check-in, add to phone calendar with a 10-minute alert.
@@ -41,7 +41,7 @@ Tell people to **install first, then sign up for hours.** If they open the link 
 - On the 1st (about 1 AM) the previous month is saved to Archive as a sheet named `AGC Prayer Chain - YYYY-MM` — hours and who prayed, requests, group times with who joined, and a coverage summary — and cleared from the app. The Admin tab has a button to do this by hand.
 
 ## Settings (top of Code.gs)
-`TZ` (default `America/Chicago`), `START_HOUR` / `END_HOUR` (default all 24 hours), `MAX_PER_DEVICE` (hours per phone, default 50), `MAX_TRANSLATIONS` (per phone per 6 hours, default 30; admin is exempt), `MAX_SESSIONS` (group times per month, default 40).
+`TZ` (default `America/Chicago`), `CHAIN_WEEKDAY` / `CHAIN_WEEK` (default `6` / `1` = first Saturday; set `CHAIN_WEEKDAY: null` for every day of the month), `START_HOUR` / `END_HOUR` (default all 24 hours), `MAX_PER_DEVICE` (hours per phone, default 50), `MAX_TRANSLATIONS` (per phone per 6 hours, default 30; admin is exempt), `MAX_SESSIONS` (group times per month, default 40).
 
 ## Things to know
 - Anyone with the link can use the app. Only first names are shown. Only the PIN holder can edit requests/group times or remove someone.
@@ -51,7 +51,7 @@ Tell people to **install first, then sign up for hours.** If they open the link 
 - No push notifications. Each person can tap **Add reminder** to put an hour or group time in their phone calendar with a 10-minute alert.
 - People are recognized by phone, not by account. **My Hours** shows a *backup code*. Someone who switches phones, or uses both the Safari tab and the Home Screen app, copies the code and pastes it into *Restore* on the other one to get their hours back. Anyone with the code can manage those hours, so it should not be posted publicly.
 - If someone is abusive, Admin → *Remove all hours under a first name* clears everything under that name for the month.
-- **Clock-change days:** when the clocks change (for example Sunday, November 1, 2026, in Central Time), the day has 25 or 23 hours but the app always shows 24. On the 25-hour day the 1 AM hour happens twice and one pick covers both. Calendar reminders fire for the first.
+- **Clock changes** happen on Sundays in the US, so they never fall on a first-Saturday chain day.
 - Slow or lost connections: the app gives up after 25 seconds and shows a plain message instead of freezing.
 - To spare Google's limits, the app reads the sheet at most every 20 seconds no matter how many phones are open. A new pick appears on other phones within about 20 to 90 seconds.
 - On the 1st the monthly save emails you at your Gmail either way ("saved" or "FAILED, here is what to do"). If you never get the email, check Apps Script → Triggers.

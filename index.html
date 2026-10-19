@@ -146,6 +146,7 @@ input[type=date],input[type=time],input[type=url],select.fld{width:100%;font:inh
 /* ====================================================================
    SETTINGS — the only line you normally need to change
    ==================================================================== */
+const CHAIN_DEFAULT = { weekday: 6, week: 1 };   // prayer chain day: 6 = Saturday, week 1 = first (weekday null = every day). Live mode uses the server's setting.
 const API_URL = 'https://script.google.com/macros/s/AKfycbxWczNAk05_eaU-FVv08DyxebCIXwXGyqB0QrklNNEQ0Cry-VzR4kfmMtPpaRTZggSZpA/exec';              // paste your Google Apps Script "Web app" URL here (see SETUP.md). Empty = demo mode.
 const DEFAULT_TZ = 'America/Chicago';   // used until the server reports its own time zone
 
@@ -249,6 +250,9 @@ const I = {
   trEmpty:    ['Type or paste some text first.', 'पहिले केही पाठ लेख्नुहोस् वा टाँस्नुहोस्।'],
   translating:['Translating…', 'अनुवाद हुँदै छ…'],
   copied:     ['Copied', 'कपी भयो'],
+  chainDay:   ['Prayer chain day', 'प्रार्थना शृङ्खलाको दिन'],
+  chainRule:  ['The first Saturday of every month · all 24 hours', 'हरेक महिनाको पहिलो शनिबार · सबै २४ घण्टा'],
+  chainDone:  ['This month’s prayer chain is finished. See the next month above.', 'यस महिनाको प्रार्थना शृङ्खला सकिएको छ। माथि अर्को महिना हेर्नुहोस्।'],
   copyCodeBtn:['Copy code', 'कोड कपी गर्नुहोस्'],
   backupT:    ['Switching phones or browsers?', 'फोन वा ब्राउजर बदल्दै हुनुहुन्छ?'],
   backupD:    ['Save this code. Type it on your new phone to get your hours back.', 'यो कोड सुरक्षित राख्नुहोस्। नयाँ फोनमा यो कोड हाल्नुभयो भने तपाईंका घण्टाहरू फिर्ता आउँछन्।'],
@@ -302,6 +306,20 @@ function tzNow(tz) {
 function validTz(tz) { try { if (tz && typeof tz === 'string') { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return tz; } } catch (e) { /* unknown zone */ } return null; }
 function nextMonthOf(m) { let [y, mo] = m.split('-').map(Number); mo++; if (mo > 12) { mo = 1; y++; } return `${y}-${pad(mo)}`; }
 function daysIn(m) { const [y, mo] = m.split('-').map(Number); return new Date(Date.UTC(y, mo, 0)).getUTCDate(); }
+function chainOf(c) { return (c && 'chainWeekday' in c) ? { weekday: c.chainWeekday, week: c.chainWeek || 1 } : CHAIN_DEFAULT; }
+// The dates of a month on which the prayer chain runs (one day, e.g. the first Saturday; or every day if weekday is null).
+function chainDatesFor(month, ch) {
+  const n = daysIn(month), all = []; for (let d = 1; d <= n; d++) all.push(`${month}-${pad(d)}`);
+  if (ch.weekday === null || ch.weekday === undefined) return all;
+  const first = new Date(Date.UTC(...month.split('-').map(Number).map((v, i) => (i === 1 ? v - 1 : v)), 1)).getUTCDay();
+  const day = 1 + ((ch.weekday - first + 7) % 7) + 7 * (ch.week - 1);
+  return day <= n ? [`${month}-${pad(day)}`] : [];
+}
+// Which month to show first: this month, unless its chain day has already passed.
+function startMonth(tz, ch) {
+  const now = tzNow(tz), cur = now.date.slice(0, 7), ds = chainDatesFor(cur, ch);
+  return (ch.weekday !== null && ds.length && ds[ds.length - 1] < now.date) ? nextMonthOf(cur) : cur;
+}
 function dow(date) { const [y, m, d] = date.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
 function hl(h) { const x = h % 12 || 12; return `${x} ${h % 24 < 12 ? 'AM' : 'PM'}`; }
 const range = (h) => `${hl(h)} – ${hl((h + 1) % 24)}`;
@@ -392,13 +410,14 @@ const Demo = {
   db() { let d = LS.get('agc_demo_db', null); if (!d) { d = Demo.seed(); LS.set('agc_demo_db', d); } d.sessions = d.sessions || {}; d.joins = d.joins || []; return d; },
   save(d) { LS.set('agc_demo_db', d); },
   seed() {
-    const n = tzNow(DEFAULT_TZ), m = n.date.slice(0, 7), d0 = Number(n.date.slice(8));
+    const n = tzNow(DEFAULT_TZ), m = startMonth(DEFAULT_TZ, CHAIN_DEFAULT), d0 = Number(n.date.slice(8));
     const names = ['Sunita', 'David', 'Maria', 'Rajan', 'Grace', 'Anil', 'Ruth', 'Samuel'];
     const slots = []; let k = 0;
-    for (let dd = d0; dd <= Math.min(daysIn(m), d0 + 2); dd++) {
+    const days = CHAIN_DEFAULT.weekday === null ? [d0, d0 + 1, d0 + 2].filter((x) => x <= daysIn(m)) : chainDatesFor(m, CHAIN_DEFAULT).map((x) => Number(x.slice(8)));
+    for (const dd of days) {
       for (let h = 5; h < 22; h++) { if ((h + dd) % 3 !== 0) slots.push({ d: `${m}-${pad(dd)}`, h, n: names[k++ % names.length], dev: 'sample', p: false }); }
     }
-    const sd = Math.min(daysIn(m), d0 + 1);
+    const sd = CHAIN_DEFAULT.weekday === null ? Math.min(daysIn(m), d0 + 1) : (days[0] || 1);
     return { sessions: { [m]: [{ id: 's1', d: `${m}-${pad(sd)}`, t: '20:00', dur: 60, en: 'Worldwide prayer gathering', ne: 'विश्वव्यापी प्रार्थना सभा', link: '' }] },
       joins: [{ sid: 's1', n: 'Sunita', c: 'Nepal', dev: 'sample' }, { sid: 's1', n: 'David', c: 'USA', dev: 'sample' }, { sid: 's1', n: 'Grace', c: 'Kenya', dev: 'sample' }],
       slots, requests: { [m]: [
@@ -408,6 +427,7 @@ const Demo = {
     ] } };
   },
   months() { const cur = tzNow(DEFAULT_TZ).date.slice(0, 7); return [cur, nextMonthOf(cur)]; },
+  chainOk(date) { const ds = chainDatesFor(String(date).slice(0, 7), CHAIN_DEFAULT); if (CHAIN_DEFAULT.weekday !== null && !ds.includes(date)) throw new Error('The prayer chain is only on ' + ds[0] + '.'); },
   async state(month) {
     const d = Demo.db(), months = Demo.months(), n = tzNow(DEFAULT_TZ);
     if (!months.includes(month)) throw new Error('That month is not open.');
@@ -416,7 +436,7 @@ const Demo = {
       slots: d.slots.filter((s) => s.d.startsWith(month)).map((s) => ({ d: s.d, h: s.h, n: s.n, m: s.dev === deviceId, p: !!s.p })),
       requests: (d.requests[month] || []).slice().sort((a, b) => a.order - b.order),
       sessions: (d.sessions[month] || []).map((q) => Object.assign({}, q, { joined: d.joins.filter((j) => j.sid === q.id).map((j) => ({ n: j.n, c: j.c, m: j.dev === deviceId })) })).sort((a, b) => ((a.d + a.t) < (b.d + b.t) ? -1 : 1)),
-      config: { tz: DEFAULT_TZ, startHour: 0, endHour: 24, months, nowDate: n.date, nowHour: n.hour }
+      config: { tz: DEFAULT_TZ, startHour: 0, endHour: 24, months, nowDate: n.date, nowHour: n.hour, chainWeekday: CHAIN_DEFAULT.weekday, chainWeek: CHAIN_DEFAULT.week }
     };
   },
   async post(b) {
@@ -425,6 +445,7 @@ const Demo = {
     const find = () => d.slots.findIndex((s) => s.d === b.date && s.h === Number(b.hour));
     const past = b.date < n.date || (b.date === n.date && Number(b.hour) < n.hour);
     if (b.action === 'claim') {
+      Demo.chainOk(b.date);
       if (past) throw new Error('That hour has already passed.');
       if (find() >= 0) throw new Error('taken');
       const name = firstName(b.name); if (!name) throw new Error('Please enter your first name.');
@@ -474,7 +495,7 @@ const Api = API_URL ? Remote : Demo;
    APP STATE
    ==================================================================== */
 const S = {
-  view: 'slots', tz: DEFAULT_TZ, month: tzNow(DEFAULT_TZ).date.slice(0, 7), day: null,
+  view: 'slots', tz: DEFAULT_TZ, month: startMonth(DEFAULT_TZ, CHAIN_DEFAULT), day: null,
   data: null, error: null, offline: false, busy: false,
   pin: (() => { try { return sessionStorage.getItem('agc_pin') || ''; } catch (e) { return ''; } })(),
   draft: null, draftMonth: null, sdraft: null, sdraftMonth: null, tr: { dir: 'en-ne', input: '', output: '' },
@@ -488,6 +509,7 @@ const slotIndex = () => { const m = new Map(); (S.data ? S.data.slots : []).forE
 const isPast = (date, h) => date < S.now.date || (date === S.now.date && h < S.now.hour);
 const hasStarted = (date, h) => date < S.now.date || (date === S.now.date && h <= S.now.hour);
 const curMonth = () => S.now.date.slice(0, 7);
+const chainDates = (m) => chainDatesFor(m || S.month, chainOf(S.data && S.data.config));
 // ---- time zones: the chain runs on one time zone (S.tz); everyone can also see their own (S.vtz)
 const showsLocal = (ms) => !!S.vtz && S.vtz !== S.tz && tzOffsetMs(ms, S.tz) !== tzOffsetMs(ms, S.vtz);
 function tzAbbr(ms, tz) { return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms)).find((x) => x.type === 'timeZoneName').value; }
@@ -533,14 +555,14 @@ async function load(quiet) {
     if (/not open/i.test(e.message || '') && !load.retrying) {
       // The month rolled over while the app stayed open: jump to the current month.
       load.retrying = true;
-      try { S.month = tzNow(S.tz).date.slice(0, 7); S.day = null; S.draftMonth = null; S.sdraftMonth = null; S.data = null; return await load(quiet); }
+      try { S.month = startMonth(S.tz, chainOf(S.data && S.data.config)); S.day = null; S.draftMonth = null; S.sdraftMonth = null; S.data = null; return await load(quiet); }
       finally { load.retrying = false; }
     }
     const c = LS.get('agc_cache_' + S.month, null);
     if (c) { S.data = c; S.offline = true; } else { S.data = null; S.error = e.message || 'error'; }
   }
   S.now = tzNow(S.tz);
-  if (!S.day || !S.day.startsWith(S.month)) S.day = S.month === S.now.date.slice(0, 7) ? S.now.date : `${S.month}-01`;
+  { const cd = chainDates(S.month); if (!S.day || !cd.includes(S.day)) S.day = cd.includes(S.now.date) ? S.now.date : (cd[0] || `${S.month}-01`); }
   if (S.view === 'admin' && S.pin && S.data) { if (S.draftMonth !== S.month) startReqDraft(); if (S.sdraftMonth !== S.month) startSesDraft(); }
   const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if (quiet && (typing || $('#sheet').classList.contains('open'))) return;
@@ -591,13 +613,13 @@ function bannerHtml() {
 }
 
 function slotsHtml() {
-  const idx = slotIndex(), hours = hoursList(), dim = daysIn(S.month), total = dim * hours.length;
+  const idx = slotIndex(), hours = hoursList(), cdates = chainDates(S.month), total = cdates.length * hours.length;
   const slots = S.data.slots, filled = slots.length, prayed = slots.filter((s) => s.p).length;
   const pct = total ? Math.round(100 * filled / total) : 0;
   let html = '';
 
   // Who is praying right now
-  if (S.month === curMonth() && hours.includes(S.now.hour)) {
+  if (cdates.includes(S.now.date) && hours.includes(S.now.hour)) {
     const cur = idx.get(`${S.now.date}|${S.now.hour}`);
     html += `<div class="card" style="border-color:var(--gold)">
       <div class="row2"><div><div class="muted">${esc(I.prayingNow[0])} · <span lang="ne">${esc(I.prayingNow[1])}</span> (${esc(range(S.now.hour))})</div>`;
@@ -613,15 +635,23 @@ function slotsHtml() {
     <div class="muted">${filled} ${esc(I.of[0])} ${total} ${esc(I.hours[0])} · <span lang="ne">${total} ${esc(I.of[1])} ${filled} ${esc(I.hours[1])}</span>${prayed ? ` · ✓ ${prayed}` : ''}</div>
     <button class="btn ghost block" style="margin-top:10px" data-act="nextOpen">${bi('nextOpen')}</button></div>`;
 
-  // Day strip
-  html += `<div class="strip" id="strip">`;
-  for (let d = 1; d <= dim; d++) {
-    const date = `${S.month}-${pad(d)}`, w = dow(date);
+  // Chain-day banner (when the chain runs on one day a month) or day strip (every-day mode)
+  const single = cdates.length === 1;
+  if (single) {
+    const cdl = dayLabel(cdates[0]);
+    html += `<div class="card" style="background:var(--mine);border-color:var(--mine-line)"><div class="muted">${esc(I.chainDay[0])} · <span lang="ne">${esc(I.chainDay[1])}</span></div>
+      <div class="h2">${esc(cdl[0])}</div><div lang="ne" class="muted">${esc(cdl[1])}</div>
+      <p class="muted" style="margin:6px 0 0">${esc(I.chainRule[0])}<br><span lang="ne">${esc(I.chainRule[1])}</span></p>
+      ${cdates[0] < S.now.date ? `<p class="note" style="margin:8px 0 0"><b>${esc(I.chainDone[0])}</b><br><span lang="ne">${esc(I.chainDone[1])}</span></p>` : ''}</div>`;
+  }
+  if (!single) html += `<div class="strip" id="strip">`;
+  for (const date of single ? [] : cdates) {
+    const w = dow(date), d = Number(date.slice(8));
     const c = slots.filter((s) => s.d === date).length, p = hours.length ? Math.round(100 * c / hours.length) : 0;
     html += `<button class="day ${date === S.now.date ? 'today' : ''}" data-act="day" data-d="${date}" aria-pressed="${date === S.day}" aria-label="${esc(dayLabel(date)[0])}">
       <small>${EN_DAYS_S[w]}</small><b>${d}</b><small lang="ne">${NE_DAYS_S[w]}</small><i><u style="width:${p}%"></u></i></button>`;
   }
-  html += `</div>`;
+  if (!single) html += `</div>`;
 
   // Day title + hours
   const dl = dayLabel(S.day);
@@ -840,9 +870,8 @@ async function onAct(act, el, ev) {
     case 'install': if (S.installEvt) { S.installEvt.prompt(); S.installEvt = null; render(); } break;
     case 'closeSheet': closeSheet(); break;
     case 'nextOpen': {
-      const idx = slotIndex(), dim = daysIn(S.month);
-      for (let dd = 1; dd <= dim; dd++) for (const hh of hoursList()) {
-        const date = `${S.month}-${pad(dd)}`;
+      const idx = slotIndex();
+      for (const date of chainDates(S.month)) for (const hh of hoursList()) {
         if (isPast(date, hh) || idx.has(`${date}|${hh}`)) continue;
         S.day = date; S.flashHour = hh; render(); return;
       }
@@ -947,7 +976,7 @@ async function onAct(act, el, ev) {
       await translateInto(q.en, 'en', 'ne', (out) => { q.ne = out; render(); toast('trDraftNote'); });
       break;
     }
-    case 'addSes': S.sdraft.push({ id: '', d: S.month === curMonth() ? S.now.date : `${S.month}-01`, t: '20:00', dur: 60, en: '', ne: '', link: '' }); render(); break;
+    case 'addSes': S.sdraft.push({ id: '', d: (() => { const cd = chainDates(S.month); return cd.includes(S.now.date) ? S.now.date : (cd[0] || `${S.month}-01`); })(), t: '20:00', dur: 60, en: '', ne: '', link: '' }); render(); break;
     case 'delSes': S.sdraft.splice(Number(el.dataset.si), 1); render(); break;
     case 'saveSes': await run(async () => { await post({ action: 'saveSessions', pin: S.pin, sessions: S.sdraft }); toast('saved'); S.sdraftMonth = null; await load(true); startSesDraft(); }); break;
     case 'archive': {

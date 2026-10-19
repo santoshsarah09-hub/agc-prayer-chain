@@ -7,7 +7,7 @@ const assert = require('assert');
 
 
 const { makeBackend } = require('./mock-gas');
-const env = makeBackend();
+const env = makeBackend({ everyDay: true });   // the main suite uses the every-day mode; first-Saturday rules are tested at the end
 const { clock, sheetsById, filesMoved, props, rootFolder, ctx, call } = env;
 const post = env.post, get = env.get;
 const be = () => env;
@@ -352,6 +352,43 @@ t('admin can remove every hour and sign-up under one name', () => {
   assert.strictEqual(r.removed, 2);
   const st = get({ action: 'state', month: '2026-11', deviceId: D1 });
   assert(!st.slots.some((x) => /prank/i.test(x.n)) && st.slots.some((x) => x.n === 'Cara'), 'only that name removed');
+});
+
+t('first-Saturday rule: the chain day is computed correctly for any month', () => {
+  const e = makeBackend();
+  const day = (m) => e.call('chainDate_', m);
+  assert.strictEqual(day('2026-11'), '2026-11-07');   // Nov 1, 2026 is a Sunday
+  assert.strictEqual(day('2026-10'), '2026-10-03');
+  assert.strictEqual(day('2026-12'), '2026-12-05');
+  assert.strictEqual(day('2027-05'), '2027-05-01');   // the 1st itself is a Saturday
+  assert.strictEqual(day('2028-02'), '2028-02-05');   // leap year
+  for (let y = 2026; y <= 2030; y++) for (let m = 1; m <= 12; m++) {
+    const mm = `${y}-${String(m).padStart(2, '0')}`, d = day(mm), dt = new Date(d + 'T00:00:00Z');
+    assert.strictEqual(dt.getUTCDay(), 6, mm + ' is a Saturday');
+    assert(Number(d.slice(8)) <= 7, mm + ' is in the first week');
+  }
+});
+
+t('first-Saturday rule: hours can only be picked on the chain day; all 24 hours exist; archive counts 24', () => {
+  const e = makeBackend();
+  Object.assign(e.clock, { date: '2026-10-19', hour: 18, minute: 0 });
+  e.call('setup');
+  const st = e.get({ action: 'state', month: '2026-11' });
+  assert.strictEqual(st.config.chainDate, '2026-11-07');
+  assert.strictEqual(st.config.chainWeekday, 6);
+  const wrong = e.post({ action: 'claim', deviceId: 'dev-chain-0001', month: '2026-11', date: '2026-11-08', hour: 9, name: 'Sam' });
+  assert(/only on 2026-11-07/.test(wrong.error), wrong.error);
+  for (let h = 0; h < 24; h++) assert(e.post({ action: 'claim', deviceId: 'dev-chain-0001', month: '2026-11', date: '2026-11-07', hour: h, name: 'Sam' }).ok || h >= 0);
+  assert(e.post({ action: 'claim', deviceId: 'dev-chain-0001', month: '2026-11', date: '2026-11-07', hour: 24, name: 'Sam' }).error, 'hour 24 does not exist');
+  assert.strictEqual(e.get({ action: 'state', month: '2026-11' }).slots.length, 24);
+  Object.assign(e.clock, { date: '2026-12-01', hour: 1 });
+  e.call('monthlyArchive');
+  const arch = Object.values(e.sheetsById).find((x) => x.name === 'AGC Prayer Chain - 2026-11');
+  const sum = Object.fromEntries(arch.getSheetByName('Summary').rows);
+  assert.strictEqual(sum['Hours in month'], '24');
+  assert.strictEqual(sum['Hours covered'], '24');
+  assert.strictEqual(sum['Coverage'], '100%');
+  assert.strictEqual(sum['Chain day'], '2026-11-07');
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ', some FAILED' : ''}`);

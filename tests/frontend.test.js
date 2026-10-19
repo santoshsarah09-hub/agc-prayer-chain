@@ -15,8 +15,11 @@ function chicagoNow() {
   return { date: `${g('year')}-${g('month')}-${g('day')}`, hour: Number(g('hour')) % 24 };
 }
 
-function boot({ api, fetchImpl, ua } = {}) {
-  const html = api ? HTML.replace("const API_URL = '';", `const API_URL = '${api}';`) : HTML;
+function boot({ api, fetchImpl, ua, chain } = {}) {
+  // Tests run against the app with no backend URL (demo) or a fake one; chain:true keeps the first-Saturday rule,
+  // otherwise the older every-day mode is used so the general tests can pick any day.
+  let html = HTML.replace(/const API_URL = '[^']*';/, `const API_URL = '${api || ''}';`);
+  if (!chain) html = html.replace('const CHAIN_DEFAULT = { weekday: 6, week: 1 };', 'const CHAIN_DEFAULT = { weekday: null, week: 1 };');
   const errors = [], downloads = [];
   const dom = new JSDOM(html, {
     url: 'https://prayer.example/', runScripts: 'dangerously', pretendToBeVisual: true,
@@ -257,7 +260,7 @@ async function t(name, fn) {
 
   /* ------------------------------------------------------------------ */
   console.log('\nFront end + real backend logic — two phones');
-  const be = makeBackend(); Object.assign(be.clock, chicagoNow()); be.call('setup');
+  const be = makeBackend({ everyDay: true }); Object.assign(be.clock, chicagoNow()); be.call('setup');
   const PIN = be.props.ADMIN_PIN;
   const shim = (flag) => async (url, opts) => {
     if (flag.offline) throw new TypeError('network down');
@@ -442,6 +445,36 @@ async function t(name, fn) {
     html.close(); down.close();
   });
   Pa.close();
+
+
+  await t('first Saturday: phone shows one chain day with 24 hours; other days cannot be picked', async () => {
+    const be2 = makeBackend(); Object.assign(be2.clock, chicagoNow()); be2.call('setup');
+    const sh = async (url, opts) => { const u = new URL(url); const body = opts && opts.method === 'POST' ? be2.post(JSON.parse(opts.body)) : be2.get(Object.fromEntries(u.searchParams)); return { text: async () => JSON.stringify(body) }; };
+    const C = boot({ api: 'https://script.test/exec', fetchImpl: sh, chain: true }); await sleep(300);
+    const cd = C.S('chainDates(S.month)');
+    assert.strictEqual(cd.length, 1, 'one chain day');
+    assert.strictEqual(new Date(cd[0] + 'T00:00:00Z').getUTCDay(), 6, 'it is a Saturday');
+    assert(Number(cd[0].slice(8)) <= 7, 'first week');
+    assert(cd[0] >= chicagoNow().date, 'shows the upcoming chain, not a finished one');
+    assert.strictEqual(C.$$('.day').length, 0, 'no day strip');
+    assert.strictEqual(C.$$('.slot').length, 24, '24 hours');
+    assert(C.text().includes('Prayer chain day') && C.text().includes('पहिलो शनिबार'));
+    assert(C.text().includes('of 24'), 'coverage counts 24 hours');
+    const btn = C.$('.slot.open [data-act="pick"]'); await C.click(btn); C.type('#nameIn', 'Asha'); await C.click('[data-act="confirmPick"]');
+    assert.strictEqual(C.$$('.slot.mine').length, 1);
+    const r = await C.w.eval(`Api.post({ action: 'claim', month: S.month, date: S.month + '-28', hour: 9, name: 'X' }).then(() => 'ok', (e) => e.message)`);
+    assert(/only on/.test(r), r);
+    assert.deepStrictEqual(C.errors, []);
+    C.close();
+  });
+  await t('first Saturday (demo): same rule without a backend', async () => {
+    const D = boot({ chain: true }); await sleep(250);
+    assert.strictEqual(D.$$('.slot').length, 24);
+    assert.strictEqual(D.$$('.day').length, 0);
+    assert(D.text().includes('Prayer chain day'));
+    assert.deepStrictEqual(D.errors, []);
+    D.close();
+  });
 
   assert.deepStrictEqual(P1.errors.concat(P2.errors), [], 'no script errors in live run');
   P1.close(); P2.close();

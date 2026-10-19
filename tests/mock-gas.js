@@ -4,8 +4,10 @@ const vm = require('vm');
 const path = require('path');
 const assert = require('assert');
 
-function makeBackend() {
-const src = fs.readFileSync(path.join(__dirname, '..', 'backend', 'Code.gs'), 'utf8');
+function makeBackend(opts = {}) {
+// opts.everyDay: run the chain on every day of the month (the older behaviour) instead of the first Saturday.
+let src = fs.readFileSync(path.join(__dirname, '..', 'backend', 'Code.gs'), 'utf8');
+if (opts.everyDay) { assert(src.includes('CHAIN_WEEKDAY: 6,')); src = src.replace('CHAIN_WEEKDAY: 6,', 'CHAIN_WEEKDAY: null,'); }
 
 const clock = { date: '2026-10-18', hour: 17, minute: 0 };           // pretend "now" in the app's time zone
 const sheetsById = {};

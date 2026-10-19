@@ -13,6 +13,8 @@ var CONFIG = {
   TZ: 'America/Chicago',        // one time zone for everyone
   START_HOUR: 0,                // first hour of each day (0 = 12 AM)
   END_HOUR: 24,                 // end of the last hour (24 = through midnight)
+  CHAIN_WEEKDAY: 6,             // the prayer chain runs on this weekday: 0 = Sunday ... 6 = Saturday (null = every day of the month)
+  CHAIN_WEEK: 1,                // ... in this week of the month: 1 = first, 2 = second, ...
   MAX_PER_DEVICE: 50,           // most hours one phone can hold in a month
   MAX_TRANSLATIONS: 30,         // translations one phone may request per 6 hours (the admin PIN is exempt)
   MAX_SESSIONS: 40,             // group prayer times per month
@@ -158,6 +160,16 @@ function daysInMonth_(month) {
   return new Date(Date.UTC(Number(a[0]), Number(a[1]), 0)).getUTCDate();
 }
 
+// The one day of the month the prayer chain runs (default: the first Saturday), as 'yyyy-MM-dd'.
+// Returns null when the chain runs every day (CHAIN_WEEKDAY = null).
+function chainDate_(month) {
+  if (CONFIG.CHAIN_WEEKDAY === null) return null;
+  var a = month.split('-');
+  var firstDow = new Date(Date.UTC(Number(a[0]), Number(a[1]) - 1, 1)).getUTCDay();
+  var day = 1 + ((CONFIG.CHAIN_WEEKDAY - firstDow + 7) % 7) + 7 * (CONFIG.CHAIN_WEEK - 1);
+  return month + '-' + pad2_(day);
+}
+
 function allowedMonths_() {
   var cur = nowParts_().month;
   return [cur, nextMonth_(cur)];
@@ -219,6 +231,8 @@ function parseSlot_(body) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date.slice(0, 7) !== month) throw new Error('Bad date.');
   var day = Number(date.slice(8, 10));
   if (day < 1 || day > daysInMonth_(month)) throw new Error('Bad date.');
+  var cd = chainDate_(month);
+  if (cd && date !== cd) throw new Error('The prayer chain is only on ' + cd + '.');
   var hour = Number(body.hour);
   if (!(hour >= CONFIG.START_HOUR && hour < CONFIG.END_HOUR && hour % 1 === 0)) throw new Error('Bad hour.');
   return { month: month, date: date, hour: hour, key: slotKey_(date, hour) };
@@ -280,7 +294,8 @@ function getState_(month, deviceId) {
       return { id: q.id, d: q.d, t: q.t, dur: q.dur, en: q.en, ne: q.ne, link: q.link,
         joined: q.joined.map(function (j) { return { n: j.n, c: j.c, m: !!dev && j.dev === dev }; }) };
     }),
-    config: { tz: CONFIG.TZ, startHour: CONFIG.START_HOUR, endHour: CONFIG.END_HOUR, months: allowedMonths_(), nowDate: n.date, nowHour: n.hour }
+    config: { tz: CONFIG.TZ, startHour: CONFIG.START_HOUR, endHour: CONFIG.END_HOUR, months: allowedMonths_(), nowDate: n.date, nowHour: n.hour,
+      chainWeekday: CONFIG.CHAIN_WEEKDAY, chainWeek: CONFIG.CHAIN_WEEK, chainDate: chainDate_(month) }
   };
 }
 
@@ -549,12 +564,13 @@ function archiveMonth_(month) {
   var out = SpreadsheetApp.create('AGC Prayer Chain - ' + month);
   DriveApp.getFileById(out.getId()).moveTo(archive);
 
-  var total = daysInMonth_(month) * (CONFIG.END_HOUR - CONFIG.START_HOUR);
+  var total = (chainDate_(month) ? 1 : daysInMonth_(month)) * (CONFIG.END_HOUR - CONFIG.START_HOUR);
   var prayed = slotRows.filter(function (r) { return r.v[7] !== ''; }).length;
   var summary = out.getSheets()[0];
   summary.setName('Summary');
-  summary.getRange(1, 1, 5, 2).setNumberFormat('@').setValues([
+  summary.getRange(1, 1, 6, 2).setNumberFormat('@').setValues([
     ['Month', month],
+    ['Chain day', chainDate_(month) || 'every day'],
     ['Hours in month', String(total)],
     ['Hours covered', String(slotRows.length)],
     ['Marked "I prayed"', String(prayed)],
